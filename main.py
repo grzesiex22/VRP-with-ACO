@@ -1,8 +1,8 @@
-from Generator import Generator
-from VRP import VRP
-from ACO import ACO
-from Visualizer import Visualizer
-from TSP_solver import solve_tsp
+from TSP.Generator import Generator
+from TSP.TSP import TSP
+from TSP.ACO_for_TSP import ACO_for_TSP
+from TSP.Visualizer import Visualizer
+from TSP.TSP_solver import solve_tsp
 
 
 def main():
@@ -16,10 +16,10 @@ def main():
         print(f"id={node.id} x={node.x} y={node.y}")
 
     # 2️⃣ stworzenie problemu VRP
-    problem = VRP(nodes)
+    problem = TSP(nodes)
 
     # 3️⃣ uruchomienie algorytmu mrówkowego
-    aco = ACO(problem, ants=10, iterations=100)
+    aco = ACO_for_TSP(problem, ants=10, iterations=100)
 
     best_route, best_cost = aco.run()
 

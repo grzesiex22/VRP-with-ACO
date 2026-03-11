@@ -1,7 +1,7 @@
-from Ant import Ant
+from TSP.Ant import Ant
 
 
-class ACO:
+class ACO_for_TSP:
 
     def __init__(self, problem, ants=20, iterations=100):
 

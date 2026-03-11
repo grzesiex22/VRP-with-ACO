@@ -1,7 +1,7 @@
 import math
 
 
-class VRP:
+class TSP:
 
     def __init__(self, nodes, depot_index=0):
         self.nodes = nodes

@@ -1,5 +1,5 @@
 import random
-from Node import Node
+from TSP.Node import Node
 
 
 class Generator:
