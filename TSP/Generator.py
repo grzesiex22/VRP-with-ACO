@@ -12,7 +12,6 @@ class Generator:
         self.n = n
 
     def generate(self):
-
         nodes = []
 
         for i in range(self.n):
@@ -22,3 +21,6 @@ class Generator:
             nodes.append(Node(i, x, y))
 
         return nodes
+
+
+

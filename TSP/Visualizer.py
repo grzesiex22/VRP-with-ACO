@@ -37,7 +37,7 @@ class Visualizer:
         self.draw_nodes()
         self.draw_route(route)
 
-        plt.title("Vehicle Routing Problem - best route")
+        plt.title("TSP - best route")
         plt.xlabel("X")
         plt.ylabel("Y")
 
