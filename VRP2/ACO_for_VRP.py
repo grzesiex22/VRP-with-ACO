@@ -1,9 +1,12 @@
-from VRP.Ant import Ant
+from datetime import datetime, timedelta
+
+from VRP2.Ant import Ant
+from VRP2.VRP import VRP
 
 
 class ACO_for_VRP:
 
-    def __init__(self, problem, ants=20, iterations=100):
+    def __init__(self, problem: VRP, ants=20, iterations=100):
 
         self.problem = problem
         self.ants = ants
@@ -16,28 +19,40 @@ class ACO_for_VRP:
         self.beta = 2
         self.evaporation = 0.5
 
+
     def route_cost(self, route):
 
-        dist = self.problem.time_matrix()
+        current_time_s = 0.0
+        total_penalty_s = 0.0
 
-        cost = 0
+        time_matrix = self.problem.time_matrix_seconds
 
         for i in range(len(route) - 1):
             a = route[i]
             b = route[i + 1]
 
-            cost += dist[a][b]
+            current_time_s += time_matrix[a.id][b.id]
 
-        return cost
+            if current_time_s > b.time_window_s[1]:
+                total_penalty_s += b.penalty_s[1]
+                current_time_s += b.penalty_s[1]
+
+            elif current_time_s < b.time_window_s[0]:
+                wait_time = b.time_window_s[0] - current_time_s
+                current_time_s += wait_time + b.penalty_s[0]
+                total_penalty_s += b.penalty_s[0]
+
+        return current_time_s
+
 
     def solution_cost(self, routes):
 
-        total_cost = 0
+        total_time = 0.0
 
         for route in routes:
-            total_cost += self.route_cost(route)
+            total_time = self.route_cost(route)
 
-        return total_cost
+        return total_time
 
     def evaporate(self):
 
@@ -66,8 +81,8 @@ class ACO_for_VRP:
                     a = route[i]
                     b = route[i + 1]
 
-                    self.pheromone[a][b] += 1 / cost
-                    self.pheromone[b][a] += 1 / cost
+                    self.pheromone[a.id][b.id] += 1 / cost
+                    self.pheromone[b.id][a.id] += 1 / cost
 
     def run(self):
 

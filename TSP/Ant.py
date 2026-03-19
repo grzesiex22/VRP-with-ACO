@@ -10,7 +10,7 @@ class Ant:
     def build_route(self, pheromone, alpha, beta):
 
         nodes = self.problem.nodes
-        dist = self.problem.distance_matrix()
+        dist = self.problem.time_matrix()
 
         unvisited = list(range(1, len(nodes)))
         route = [0]

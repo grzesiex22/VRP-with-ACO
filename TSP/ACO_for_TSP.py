@@ -18,7 +18,7 @@ class ACO_for_TSP:
 
     def route_cost(self, route):
 
-        dist = self.problem.distance_matrix()
+        dist = self.problem.time_matrix()
 
         cost = 0
 

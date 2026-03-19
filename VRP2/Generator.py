@@ -1,0 +1,53 @@
+import random
+from VRP2.Node import Node
+from datetime import datetime, time, timedelta
+
+
+class Generator:
+
+    def __init__(self, x0=0, x1=100, y0=0, y1=100, d0=100, d1=1000, t0=0, t1=20, n=20, seed=None):
+        self.x0 = x0
+        self.x1 = x1
+        self.y0 = y0
+        self.y1 = y1
+        self.d0 = d0
+        self.d1 = d1
+        self.t0 = t0
+        self.t1 = t1
+
+        self.n = n
+
+        if seed:
+            random.seed(seed)
+
+    def generate(self):
+
+        i = 0
+        nodes = []
+        positions = set()
+        start_day = datetime(2000, 1, 1, 0, 0)
+
+        while len(nodes) < self.n:
+            x = random.randint(self.x0, self.x1)
+            y = random.randint(self.y0, self.y1)
+
+            if i == 0:
+                d = 0
+            else:
+                d = random.randint(self.d0, self.d1)
+
+            hour1 = random.randint(self.t0, self.t1)
+            hour2 = random.randint(self.t0, self.t1)
+
+            t0 = datetime(2000, 1, 1, min(hour1, hour2), 0)  # 22:00
+            t1 = datetime(2000, 1, 1, max(hour1, hour2), 0)  # 22:00
+
+            p0 = timedelta(minutes=20)
+            p1 = timedelta(minutes=30)
+
+            if (x, y) not in positions:
+                positions.add((x, y))
+                nodes.append(Node(i, x, y, d, t0=t0, t1=t1, p0=p0, p1=p1, start_day=start_day))
+                i += 1
+
+        return nodes

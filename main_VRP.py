@@ -1,15 +1,15 @@
 from VRP.Generator import Generator
 from VRP.VRP import VRP
 from VRP.ACO_for_VRP import ACO_for_VRP
-from VRP.Visualizer import Visualizer , plt
+from VRP.Visualizer import Visualizer, plt
 from VRP.VRP_solver import solve_vrp
 
 
 def main():
-    max_capacity = 1500
+    max_capacity = 400
 
     # 1️⃣ generowanie klientów
-    generator = Generator(n=15, seed=50)
+    generator = Generator(d0=10, d1=100, n=10, seed=50)
     nodes = generator.generate()
 
     print("Wygenerowane punkty:")
@@ -20,7 +20,7 @@ def main():
     problem = VRP(nodes, max_capacity=max_capacity)
 
     # 3️⃣ uruchomienie algorytmu mrówkowego
-    aco = ACO_for_VRP(problem, ants=30, iterations=100)
+    aco = ACO_for_VRP(problem, ants=10, iterations=100)
 
     best_route, best_cost = aco.run()
 
