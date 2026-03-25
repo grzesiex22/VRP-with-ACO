@@ -33,8 +33,11 @@ class Generator:
 
             if i == 0:
                 d = 0
+                service = timedelta(minutes=0)
             else:
                 d = random.randint(self.d0, self.d1)
+                service = timedelta(minutes=30)
+                
 
             hour1 = random.randint(self.t0, self.t1)
             hour2 = random.randint(self.t0, self.t1)
@@ -47,7 +50,7 @@ class Generator:
 
             if (x, y) not in positions:
                 positions.add((x, y))
-                nodes.append(Node(i, x, y, d, t0=t0, t1=t1, p0=p0, p1=p1, start_day=start_day))
+                nodes.append(Node(i, x, y, d, t0=t0, t1=t1, p0=p0, p1=p1, start_day=start_day, service=service))
                 i += 1
 
         return nodes

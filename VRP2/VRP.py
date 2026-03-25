@@ -5,7 +5,7 @@ from VRP2.Node import Node
 
 class VRP:
 
-    def __init__(self, nodes: [Node], depot_index=0, max_capacity=None):
+    def __init__(self, nodes: list, depot_index=0, max_capacity=None):
         self.nodes = nodes
         self.depot = nodes[depot_index]
         self.time_matrix = self.time_matrix()
