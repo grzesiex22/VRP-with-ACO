@@ -1,9 +1,12 @@
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
+import sys
+
+
+MAX_TIME = 72 * 3600
 
 
 def solve_vrp(nodes, distance_matrix, vehicle_count, vehicle_capacity):
-
     demands = [node.demand for node in nodes]
 
     manager = pywrapcp.RoutingIndexManager(
@@ -15,14 +18,49 @@ def solve_vrp(nodes, distance_matrix, vehicle_count, vehicle_capacity):
     routing = pywrapcp.RoutingModel(manager)
 
     # koszt przejazdu
-    def distance_callback(from_index, to_index):
+    def time_callback(from_index, to_index):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
 
-        return int(distance_matrix[from_node][to_node])
+        if from_index < 0 or to_index < 0:
+            raise ValueError(f"Zły index w callbacku: {from_index}, {to_index}")
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+        travel = distance_matrix[from_node][to_node]
+        service = nodes[from_node].service_s
+
+        return int(travel + service)
+
+    time_callback_index = routing.RegisterTransitCallback(time_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(time_callback_index)
+
+    routing.AddDimension(
+        time_callback_index,
+        MAX_TIME,  # duży slack, żeby solver mógł się spóźniać
+        MAX_TIME,  # max czas trasy
+        False,  # nie wymuszaj startu od 0
+        "Time"
+    )
+    time_dimension = routing.GetDimensionOrDie("Time")
+
+    for i, node in enumerate(nodes):
+        index = manager.NodeToIndex(i)
+
+        # kara za przyjechanie za wcześnie
+        earliest = int(node.time_window_s[0])
+
+        if i == 0:
+            earliest = 0
+            latest = MAX_TIME
+            penalty = 0
+        else:
+            earliest = int(node.time_window_s[0])
+            latest = int(node.time_window_s[1])
+            penalty = int(node.penalty_s[1])
+
+        time_dimension.CumulVar(index).SetRange(earliest, MAX_TIME)
+        time_dimension.SetCumulVarSoftUpperBound(index, latest, penalty)
+
+    time_dimension.SetGlobalSpanCostCoefficient(1)
 
     # demand klientów
     def demand_callback(from_index):
@@ -58,6 +96,7 @@ def solve_vrp(nodes, distance_matrix, vehicle_count, vehicle_capacity):
 
     routes = []
     total_cost = 0
+    current_time_s = 0
 
     for vehicle_id in range(vehicle_count):
 
@@ -66,19 +105,38 @@ def solve_vrp(nodes, distance_matrix, vehicle_count, vehicle_capacity):
 
         while not routing.IsEnd(index):
 
-            node = manager.IndexToNode(index)
-            route.append(node)
+            id = manager.IndexToNode(index)
+            route.append(nodes[id])
 
             next_index = solution.Value(routing.NextVar(index))
-            next_node = manager.IndexToNode(next_index)
+            next_id = manager.IndexToNode(next_index)
 
-            total_cost += distance_matrix[node][next_node]
+            if id == next_id:
+                break
+
+            # total_cost += distance_matrix[node][next_node]
+            current_time_s += int(distance_matrix[id][next_id])
+
+            # dodatkowy czas za spóźnienie
+            if current_time_s > nodes[next_id].time_window_s[1]:
+                current_time_s += int(nodes[next_id].penalty_s[1])
+
+            # czekanie na otwarcie
+            elif current_time_s < nodes[next_id].time_window_s[0]:
+                wait_time = nodes[next_id].time_window_s[0] - current_time_s
+                current_time_s += int(wait_time)
+
+            # czas obsługi
+            current_time_s += int(nodes[next_id].service_s)
 
             index = next_index
 
-        route.append(manager.IndexToNode(index))
+        route.append(nodes[manager.IndexToNode(index)])
 
         if len(route) > 2:
             routes.append(route)
+
+    total_cost = solution.ObjectiveValue()
+    print(f"MANUAL: {current_time_s}, OBJ_VAL: {total_cost}\n")
 
     return routes, total_cost

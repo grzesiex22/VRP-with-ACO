@@ -31,16 +31,22 @@ class ACO_for_VRP:
             a = route[i]
             b = route[i + 1]
 
+            # czas dojazdu
             current_time_s += time_matrix[a.id][b.id]
 
+            # dodatkowy czas za spóźnienie
             if current_time_s > b.time_window_s[1]:
                 total_penalty_s += b.penalty_s[1]
                 current_time_s += b.penalty_s[1]
 
+            # czekanie na otwarcie
             elif current_time_s < b.time_window_s[0]:
                 wait_time = b.time_window_s[0] - current_time_s
-                current_time_s += wait_time + b.penalty_s[0]
-                total_penalty_s += b.penalty_s[0]
+                current_time_s += wait_time
+                total_penalty_s += wait_time
+
+            # czas obsługi
+            current_time_s += b.service_s
 
         return current_time_s
 
@@ -50,6 +56,7 @@ class ACO_for_VRP:
         total_time = 0.0
 
         for route in routes:
+            # total_time = max(self.route_cost(route), total_time)
             total_time = self.route_cost(route)
 
         return total_time
@@ -90,7 +97,9 @@ class ACO_for_VRP:
         best_cost = float("inf")
 
         for i in range(self.iterations):
-            print(f"{i}")
+
+            if i % 10 == 0:
+                print(f"{i}")
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
 

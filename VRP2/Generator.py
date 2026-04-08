@@ -5,7 +5,7 @@ from datetime import datetime, time, timedelta
 
 class Generator:
 
-    def __init__(self, x0=0, x1=100, y0=0, y1=100, d0=100, d1=1000, t0=0, t1=20, n=20, seed=None):
+    def __init__(self, x0=0, x1=100, y0=0, y1=100, d0=100, d1=1000, t0=0, t1=20, s0=0, s1=0, n=20, seed=None):
         self.x0 = x0
         self.x1 = x1
         self.y0 = y0
@@ -14,6 +14,8 @@ class Generator:
         self.d1 = d1
         self.t0 = t0
         self.t1 = t1
+        self.s0 = s0
+        self.s1 = s1
 
         self.n = n
 
@@ -33,8 +35,10 @@ class Generator:
 
             if i == 0:
                 d = 0
+                s = 0
             else:
                 d = random.randint(self.d0, self.d1)
+                s = random.randint(self.s0, self.s1)
 
             hour1 = random.randint(self.t0, self.t1)
             hour2 = random.randint(self.t0, self.t1)
@@ -45,9 +49,11 @@ class Generator:
             p0 = timedelta(minutes=20)
             p1 = timedelta(minutes=30)
 
+            service = timedelta(minutes=s)
+
             if (x, y) not in positions:
                 positions.add((x, y))
-                nodes.append(Node(i, x, y, d, t0=t0, t1=t1, p0=p0, p1=p1, start_day=start_day))
+                nodes.append(Node(i, x, y, d, t0=t0, t1=t1, p0=p0, p1=p1, service=service, start_day=start_day))
                 i += 1
 
         return nodes

@@ -5,7 +5,8 @@ class Node:
     def __init__(self, id, x, y, d=0,
                  t0: datetime = 0, t1: datetime = 1,
                  p0: timedelta = 0, p1: timedelta = 0,
-                 start_day: datetime = None):
+                 start_day: datetime = None,
+                 service: timedelta = 0):
         self.id = id
         self.x = x  # pozycja X
         self.y = y  # pozycja Y
@@ -18,3 +19,6 @@ class Node:
 
         self.penalty_s = [p0.total_seconds() if isinstance(p0, timedelta) else p0,
                           p1.total_seconds() if isinstance(p1, timedelta) else p1]
+
+        self.service = service
+        self.service_s = service.total_seconds() if isinstance(service, timedelta) else service
