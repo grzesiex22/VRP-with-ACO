@@ -28,7 +28,13 @@ class Visualizer:
             t0_str = node.time_window[0].strftime("%H:%M:%S")
             t1_str = node.time_window[1].strftime("%H:%M:%S")
 
-            plt.text(node.x, node.y, f"ID:{node.id} D:{node.demand}\n [{t0_str}-{t1_str}]")
+            # Logika wyświetlania etykiety
+            if node.id == 0:
+                label = f"DEPOT\n[{t0_str}-{t1_str}]"
+            else:
+                label = f"ID:{node.id} D:{node.demand}\n[{t0_str}-{t1_str}]"
+
+            plt.text(node.x, node.y, label, fontsize=9, verticalalignment='bottom')
 
     def draw_routes(self, routes):
 

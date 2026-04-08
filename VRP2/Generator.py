@@ -1,6 +1,7 @@
 import random
 from VRP2.Node import Node
 from datetime import datetime, time, timedelta
+from Vehicle import Vehicle
 
 
 class Generator:
@@ -26,8 +27,11 @@ class Generator:
 
         i = 0
         nodes = []
+        vehicles = []
         positions = set()
         start_day = datetime(2000, 1, 1, 0, 0)
+
+        total_demand = 0
 
         while len(nodes) < self.n:
             x = random.randint(self.x0, self.x1)
@@ -36,12 +40,14 @@ class Generator:
             if i == 0:
                 d = 0
                 s = 0
+                hour1 = 0
+                hour2 = 1
             else:
                 d = random.randint(self.d0, self.d1)
+                total_demand += d
                 s = random.randint(self.s0, self.s1)
-
-            hour1 = random.randint(self.t0, self.t1)
-            hour2 = random.randint(self.t0, self.t1)
+                hour1 = random.randint(self.t0, self.t1)
+                hour2 = random.randint(self.t0, self.t1)
 
             t0 = datetime(2000, 1, 1, min(hour1, hour2), 0)  # 22:00
             t1 = datetime(2000, 1, 1, max(hour1, hour2), 0)  # 22:00
@@ -56,4 +62,15 @@ class Generator:
                 nodes.append(Node(i, x, y, d, t0=t0, t1=t1, p0=p0, p1=p1, service=service, start_day=start_day))
                 i += 1
 
-        return nodes
+        # Create vehicles
+        i = 0
+        total_capacity = 0
+
+        while total_capacity < total_demand:
+            capacity = random.choice([300, 600, 900])
+            total_capacity += capacity
+
+            vehicles.append(Vehicle(id=i, capacity=capacity))
+            i += 1
+
+        return nodes, vehicles
