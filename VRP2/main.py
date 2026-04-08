@@ -6,10 +6,9 @@ from VRP2.VRP_solver import solve_vrp
 
 
 def main():
-    max_capacity = 400
 
     # 1️⃣ generowanie klientów
-    generator = Generator(d0=10, d1=100, t0=0, t1=4, n=10, seed=50)
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=10, seed=69)
     nodes, vehicles = generator.generate()
 
     print("\nWygenerowane punkty:")
@@ -23,10 +22,10 @@ def main():
     print("\n"), print("-" * 100)
 
     # 2️⃣ stworzenie problemu VRP
-    problem = VRP(nodes, max_capacity=max_capacity, vehicles=vehicles)
+    problem = VRP(nodes, vehicles=vehicles)
 
     # 3️⃣ uruchomienie algorytmu mrówkowego
-    aco = ACO_for_VRP(problem, ants=10, iterations=100)
+    aco = ACO_for_VRP(problem, ants=30, iterations=300)
 
     best_vehicles, best_cost = aco.run()
 
@@ -67,6 +66,9 @@ def main():
 
     visualizer.show(optimal_routes, title="OR-TOOLS")
 
+    print("\n"), print("-" * 100)
+    print(f"\nWłasny czas trasy: {best_cost/60} minut")
+    print(f"OR-Tools cost: {optimal_cost/60} minut")
 
 if __name__ == "__main__":
     main()

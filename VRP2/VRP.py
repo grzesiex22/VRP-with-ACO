@@ -3,15 +3,15 @@ from datetime import timedelta
 from VRP2.Node import Node
 from VRP2.Vehicle import Vehicle
 
+
 class VRP:
 
-    def __init__(self, nodes: [Node], vehicles: [Vehicle], depot_index=0, max_capacity=None):
+    def __init__(self, nodes: [Node], vehicles: [Vehicle], depot_index=0):
         self.nodes = nodes
         self.vehicles = vehicles
         self.depot = nodes[depot_index]
         self.time_matrix = self.time_matrix()
         self.time_matrix_seconds = self.time_matrix_seconds()
-        self.max_capacity = max_capacity
 
     def distance(self, a, b):
         return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2)

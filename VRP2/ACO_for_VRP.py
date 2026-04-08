@@ -113,40 +113,45 @@ class ACO_for_VRP:
         return best_vehicles, best_cost
 
     def print_summary(self, vehicles):
-        """Wyświetla szczegółowy harmonogram i podsumowanie czasowe w minutach."""
-        print("\n" + "=" * 80)
-        print(f"{'PODSUMOWANIE TRAS I HARMONOGRAM':^80}")
-        print("=" * 80)
+        """Wyświetla szczegółowy harmonogram, pojemności i podsumowanie czasowe."""
+        print("\n" + "=" * 115)  # Rozszerzona linia dla nowych kolumn
+        print(f"{'PODSUMOWANIE TRAS I HARMONOGRAM':^115}")
+        print("=" * 115)
 
         time_matrix = self.problem.time_matrix_seconds
         grand_total_seconds = 0.0
 
         for vehicle in vehicles:
             route = vehicle.routes
-            if len(route) <= 2:  # Pomiń puste trasy (tylko baza-baza)
+            if len(route) <= 2:
                 continue
 
-            print(f"\n[ POJAZD ID: {vehicle.id:2d} | Pojemność: {vehicle.filling}/{vehicle.capacity} ]")
+            print(f"\n[ POJAZD ID: {vehicle.id:2d} | Pojemność Max: {vehicle.capacity} ]")
+            # Nagłówek z nowymi kolumnami: Pop (Popyt punktu) | Auto (Ładunek w aucie)
             print(
-                f"{'Punkt':<12} | {'Okno czasowe':<15} | {'Przyjazd':<10} | {'Start serwisu':<15} | {'Odjazd':<10} | {'Info'}")
-            print("-" * 95)
+                f"{'Punkt':<12} | {'Pop':<5} | {'Auto':<6} | {'Okno czasowe':<15} | {'Przyjazd':<10} | {'Start serwisu':<15} | {'Odjazd':<10} | {'Info'}")
+            print("-" * 115)
 
             current_time_s = 0.0
-            route_start_time = 0.0
+            current_load = 0
 
             for i in range(len(route)):
                 node = route[i]
 
+                # Aktualizacja ładunku (popyt punktu)
+                current_load += node.demand
+
                 if i == 0:
                     # Start z bazy
-                    print(f"START Baza   | {'-':<15} | {'-':<10} | {'00:00:00':<15} | 00:00:00   | Wyjazd")
+                    print(
+                        f"START Baza   | {node.demand:<5} | {current_load:<6} | {'-':<15} | {'-':<10} | {'00:00:00':<15} | 00:00:00   | Wyjazd")
                     continue
 
                 # 1. Dojazd
                 travel_time = time_matrix[route[i - 1].id][node.id]
                 arrival_time_s = current_time_s + travel_time
 
-                # 2. Logika okien czasowych (tylko dla klientów)
+                # 2. Logika okien czasowych
                 wait_time_s = 0.0
                 penalty_s = 0.0
                 status_msg = ""
@@ -169,22 +174,23 @@ class ACO_for_VRP:
                     departure_time_s = start_service_s + node.service_s
                     label = f"Klient {node.id}"
 
-                # Konwersja na format czytelny
+                # Formatowanie
                 arr_str = str(timedelta(seconds=int(arrival_time_s)))
                 start_str = str(timedelta(seconds=int(start_service_s)))
                 dep_str = str(timedelta(seconds=int(departure_time_s)))
                 tw_str = f"{node.time_window[0].strftime('%H:%M')}-{node.time_window[1].strftime('%H:%M')}"
 
-                print(f"{label:<12} | {tw_str:<15} | {arr_str:<10} | {start_str:<15} | {dep_str:<10} | {status_msg}")
+                # Wyświetlanie wiersza z uwzględnieniem Pop i Auto
+                print(
+                    f"{label:<12} | {node.demand:<5} | {current_load:<6} | {tw_str:<15} | {arr_str:<10} | {start_str:<15} | {dep_str:<10} | {status_msg}")
 
                 current_time_s = departure_time_s
 
-            # Podsumowanie dla pojedynczego pojazdu
             vehicle_total_min = current_time_s / 60
             grand_total_seconds += current_time_s
             print(f"--- Czas trasy pojazdu {vehicle.id}: {vehicle_total_min:.2f} min ({current_time_s:.0f} sek) ---")
 
-        print("\n" + "=" * 80)
-        print(f"ŁĄCZNY KOSZT WSZYSTKICH TRAS: {grand_total_seconds / 60:.2f} MINUT")
-        print(f"ŁĄCZNY KOSZT W SEKUNDACH:     {grand_total_seconds:.0f} s")
-        print("=" * 80)
+        print("\n" + "=" * 115)
+        print(f"{'ŁĄCZNY KOSZT WSZYSTKICH TRAS: ' + f'{grand_total_seconds / 60:.2f}' + ' MINUT':^115}")
+        print(f"{'ŁĄCZNY KOSZT W SEKUNDACH: ' + f'{grand_total_seconds:.0f}' + ' s':^115}")
+        print("=" * 115)

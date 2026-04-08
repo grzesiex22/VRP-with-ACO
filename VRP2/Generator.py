@@ -47,7 +47,7 @@ class Generator:
                 total_demand += d
                 s = random.randint(self.s0, self.s1)
                 hour1 = random.randint(self.t0, self.t1)
-                hour2 = random.randint(self.t0, self.t1)
+                hour2 = random.randint(1, self.t1 - self.t0) + self.t0
 
             t0 = datetime(2000, 1, 1, min(hour1, hour2), 0)  # 22:00
             t1 = datetime(2000, 1, 1, max(hour1, hour2), 0)  # 22:00
@@ -67,7 +67,7 @@ class Generator:
         total_capacity = 0
 
         while total_capacity < total_demand:
-            capacity = random.choice([300, 600, 900])
+            capacity = random.choice([300, 500, 700])
             total_capacity += capacity
 
             vehicles.append(Vehicle(id=i, capacity=capacity))
