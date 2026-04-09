@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
+from tqdm import tqdm
 
-from VRP2.Ant import Ant
-from VRP2.VRP import VRP
+from VRP3.Ant import Ant
+from VRP3.VRP import VRP
+from VRP3.Vehicle import Vehicle
 
 
 class ACO_for_VRP:
 
-    def __init__(self, problem: VRP, ants=20, iterations=100):
+    def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05):
 
         self.problem = problem
         self.ants = ants
@@ -15,9 +17,27 @@ class ACO_for_VRP:
         n = len(problem.nodes)
         self.pheromone = [[1]*n for _ in range(n)]
 
-        self.alpha = 1
-        self.beta = 2
-        self.evaporation = 0.5
+        self.alpha = alpha
+        self.beta = beta
+        self.evaporation = evaporation
+
+    def chop_gtr(self, route):
+        routes = []
+        current_route = []
+
+        for node in route:
+            current_route.append(node)
+            if node.id == 0 and len(current_route) > 1:
+                routes.append(current_route)
+                current_route = [node]  # Zaczynamy nową trasę od bazy
+
+        vehicles: list[Vehicle] = []
+        for idx, route in enumerate(routes):
+            new_v = self.problem.vehicles[idx].__copy__()
+            new_v.route = route
+            vehicles.append(new_v)
+
+        return vehicles
 
     def route_cost(self, route):
         current_time_s = 0.0
@@ -45,15 +65,41 @@ class ACO_for_VRP:
 
         return current_time_s
 
-    def solution_cost(self, routes):
+    def solution_cost(self, gtr):
 
         total_time = 0.0
 
-        for route in routes:
-            # total_time = max(self.route_cost(route), total_time)
-            total_time += self.route_cost(route)
+        # 1. Tniemy GTR na poszczególne trasy (dzielimy tam, gdzie jest depot ID=0)
+        vehicles = self.chop_gtr(gtr)
 
-        return total_time
+        # 2. Liczymy koszt każdej trasy z uwzględnieniem ładowności i czasu
+        all_visited_ids = set()
+
+        for vehicle in vehicles:
+            # A. Koszt czasu jednej trasy
+            r_time_cost = self.route_cost(vehicle.route)
+
+            # B. Kara za przeładowanie (Capacity)
+            vehicle.filling = sum(node.demand for node in vehicle.route)
+            capacity_penalty = 0
+            if vehicle.filling > vehicle.capacity:  # Zakładamy równą pojemność lub bierzemy z v_obj
+                overload = vehicle.filling - vehicle.capacity
+                capacity_penalty = overload * 10000  # Bardzo ciężka kara
+
+            # total_time = max(self.route_cost(route), total_time)
+            total_time += (r_time_cost + capacity_penalty)
+
+            # C. Kolekcjonujemy ID klientów (do sprawdzenia czy wszyscy obsłużeni)
+            for n in vehicle.route:
+                if n.id != 0:
+                    all_visited_ids.add(n.id)
+
+        # 3. Kara za nieodwiedzenie wszystkich (Safety net)
+        num_clients = len(self.problem.nodes) - 1
+        if len(all_visited_ids) < num_clients:
+            total_time += (num_clients - len(all_visited_ids)) * 100000
+
+        return total_time, vehicles
 
     def evaporate(self):
 
@@ -64,56 +110,68 @@ class ACO_for_VRP:
                 self.pheromone[i][j] *= (1 - self.evaporation)
 
     def update_pheromone(self, ants):
-
-        n = len(self.pheromone)
-
         # parowanie feromonu
-        for i in range(n):
-            for j in range(n):
-                self.pheromone[i][j] *= (1 - self.evaporation)
+        self.evaporate()
 
         # dodanie nowych feromonów
         for ant in ants:
 
-            routes = [v.routes for v in ant.vehicles]
-            for route in routes:
-                cost = self.route_cost(route)
+            route = ant.gtr
+            cost, _ = self.solution_cost(route)
 
-                for i in range(len(route) - 1):
-                    a = route[i]
-                    b = route[i + 1]
+            for i in range(len(route) - 1):
+                a = route[i]
+                b = route[i + 1]
 
-                    self.pheromone[a.id][b.id] += 1 / cost
-                    self.pheromone[b.id][a.id] += 1 / cost
+                self.pheromone[a.id][b.id] += 1 / cost
+                self.pheromone[b.id][a.id] += 1 / cost
 
-    def run(self):
+    def run(self, patience=100):
 
         best_vehicles = None
         best_cost = float("inf")
+        no_improvement_count = 0
 
-        for i in range(self.iterations):
+        # Tworzymy pasek postępu
+        pbar = tqdm(range(self.iterations), desc="ACO Optimization", unit="it")
 
-            # if i % 10 == 0:
-            #     print(f"{i}")
+        for i in pbar:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
+            found_better_in_iter = False
 
             for ant in ants:
 
                 #### tu zrównoleglić
                 ant.build_route(self.pheromone, self.alpha, self.beta)
 
-                cost = self.solution_cost([v.routes for v in ant.vehicles])
+                cost, vehicles = self.solution_cost(ant.gtr)
 
                 if cost < best_cost:
                     best_cost = cost
-                    best_vehicles = ant.vehicles
+                    best_vehicles = vehicles
+                    no_improvement_count = 0
+                    found_better_in_iter = True
                 #### tu zrównoleglić - koniec
 
                 # early stoping
                 # można podbijać losowo feromony gdy stagnacja
 
             self.update_pheromone(ants)
+
+            if not found_better_in_iter:
+                no_improvement_count += 1
+
+            # AKTUALIZACJA PASKA POSTĘPU
+            pbar.set_postfix({
+                "Best Cost": f"{(best_cost/60):.2f} min",
+                "Stagnation": f"{no_improvement_count}/{patience}"
+            })
+
+            # Decyzja o przerwaniu
+            if no_improvement_count >= patience:
+                print(f"\n[EARLY STOPPING] Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
+                break
 
         return best_vehicles, best_cost
 
@@ -127,11 +185,12 @@ class ACO_for_VRP:
         grand_total_seconds = 0.0
 
         for vehicle in vehicles:
-            route = vehicle.routes
+            route = vehicle.route
             if len(route) <= 2:
                 continue
 
-            print(f"\n[ POJAZD ID: {vehicle.id:2d} | Pojemność Max: {vehicle.capacity} ]")
+            print(f"\n[ POJAZD ID: {vehicle.id:2d} | Pojemność Max: {vehicle.capacity} "
+                  f"| Pojemność użyta: {vehicle.filling} | Ilość klientów: {len(vehicle.route)-2} ]")
             # Nagłówek z nowymi kolumnami: Pop (Popyt punktu) | Auto (Ładunek w aucie)
             print(
                 f"{'Punkt':<12} | {'Pop':<5} | {'Auto':<6} | {'Okno czasowe':<15} | {'Przyjazd':<10} | {'Start serwisu':<15} | {'Odjazd':<10} | {'Info'}")
