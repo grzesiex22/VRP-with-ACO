@@ -90,7 +90,7 @@ class ACO_for_VRP:
             if vehicle.filling > vehicle.capacity:  # Zakładamy równą pojemność lub bierzemy z v_obj
                 # print("Przeładowanie")
                 overload = vehicle.filling - vehicle.capacity
-                capacity_penalty = overload * 100  # Bardzo ciężka kara
+                capacity_penalty = overload * 500  # Bardzo ciężka kara
 
             # total_time = max(self.route_cost(route), total_time)
             total_time += (r_time_cost + capacity_penalty)
@@ -195,10 +195,17 @@ class ACO_for_VRP:
         total_clients_in_problem = len(self.problem.nodes) - 1
         visited_client_ids = set()
 
+        # Lista do śledzenia przeładowanych pojazdów
+        overloaded_vehicles = []
+
         for vehicle in vehicles:
             route = vehicle.route
             if len(route) <= 2:
                 continue
+
+            # Sprawdzanie przeładowania dla statystyk końcowych
+            if vehicle.filling > vehicle.capacity:
+                overloaded_vehicles.append(str(vehicle.id))
 
             # Kolorowanie nagłówka pojazdu (Zielony = OK, Czerwony = Przeładowany)
             load_color = Fore.GREEN if vehicle.filling <= vehicle.capacity else Fore.RED
@@ -288,14 +295,24 @@ class ACO_for_VRP:
         print(f"{'STATYSTYKI KOŃCOWE':^118}")
         print("-" * 118 + Style.RESET_ALL)
 
+        # 1. Status odwiedzin
         visit_color = Fore.GREEN if num_visited == total_clients_in_problem else Fore.RED
         print(
             f"  Odwiedzeni klienci: {visit_color}{num_visited} / {total_clients_in_problem} ({(num_visited / total_clients_in_problem) * 100:.1f}%){Style.RESET_ALL}")
 
+        # 2. Status pojemności floty (NOWE)
+        if not overloaded_vehicles:
+            print(f"  Pojemność floty:    {Fore.GREEN}OK - wszystkie pojazdy w normie{Style.RESET_ALL}")
+        else:
+            ids_str = ", ".join(overloaded_vehicles)
+            print(
+                f"  Pojemność floty:    {Fore.RED}{Style.BRIGHT}PRZEKROCZONA w pojazdach ID: {ids_str}{Style.RESET_ALL}")
+
+        # 3. Ostrzeżenie o brakach
         if num_visited < total_clients_in_problem:
             missing = total_clients_in_problem - num_visited
             print(
-                f"{Fore.WHITE}{Style.BRIGHT}  UWAGA: NIE ODWIEDZONO WSZYSTKICH! BRAKUJE: {missing} KLIENTÓW!  {Style.RESET_ALL}")
+                f"{Back.RED}{Fore.WHITE}{Style.BRIGHT}  UWAGA: NIE ODWIEDZONO WSZYSTKICH! BRAKUJE: {missing} KLIENTÓW!  {Style.RESET_ALL}")
 
         print(f"  Łączny koszt czasowy floty: {Fore.YELLOW}{grand_total_seconds / 60:.2f} min{Style.RESET_ALL}")
         print(f"  Użyte pojazdy: {len([v for v in vehicles if len(v.route) > 2])} / {len(vehicles)}")

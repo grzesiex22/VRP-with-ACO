@@ -11,13 +11,12 @@ from VRP3.Gready import greedy_vrp
 
 
 
-
 def main():
     # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
     init(autoreset=True)
 
     # 1️⃣ generowanie klientów
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=20, seed=54)
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=50, seed=54)
     # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
 
     nodes, vehicles = generator.generate()
