@@ -9,14 +9,14 @@ from VRP3.VRP_solver import solve_vrp
 from VRP3.Gready import greedy_vrp
 
 
-
+VISUALIZE = True
 
 def main():
     # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
     init(autoreset=True)
 
     # 1️⃣ generowanie klientów
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=50, seed=54)
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=54)
     # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
 
     nodes, vehicles = generator.generate()
@@ -64,8 +64,9 @@ def main():
     # Wyświetlenie szczegółów
     aco_ok = problem.print_summary(aco_vehicles)
 
-    visualizer = Visualizer(nodes)
-    # visualizer.show(best_route, title="WŁASNY")
+    if VISUALIZE:
+        visualizer = Visualizer(nodes)
+        visualizer.show(best_route, title="WŁASNY")
 
     # 5 GREEDY
     print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
@@ -85,32 +86,9 @@ def main():
     # Wyświetlenie szczegółów
     greedy_ok = problem.print_summary(greedy_vehicles)
 
-    # visualizer.show(optimal_routes, title="GREEDY")
-
-    # # 6 OR-TOOLS
-    # greedy_vehicles, GREEDY_cost = solve_vrp(
-    #     nodes,
-    #     problem.time_matrix_seconds,
-    #     vehicles
-    # )
-    # print("\n"), print("-" * 100)
-    # print("\nOR-Tools - VRP  - Najlepsza trasa:")
-    # optimal_routes = [v.route for v in greedy_vehicles]
-    # indices = [[node.id for node in route] for route in optimal_routes]
-    # for i, route in enumerate(indices):
-    #     print(f"id={i} filled={greedy_vehicles[i].filling}/{greedy_vehicles[i].capacity} \n\troute: ", end="")
-    #     print(" -> ".join(map(str, route)))
-    #
-    # print(f"\nOR-Tools cost: {GREEDY_cost/60} minut")
-    #
-    # # Wyświetlenie szczegółów
-    # aco.print_summary(greedy_vehicles)
-    #
-    # visualizer.show(optimal_routes, title="OR-TOOLS")
-    #
-    # print("\n"), print("-" * 100)
-    # print(f"\nWłasny czas trasy: {ACO_cost/60} minut")
-    # print(f"OR-Tools cost: {GREEDY_cost/60} minut")
+    if VISUALIZE:
+        visualizer = Visualizer(nodes)
+        visualizer.show(optimal_routes, title="GREEDY")
 
     # --- PORÓWNANIE ---
     print("\n" + Fore.LIGHTGREEN_EX + "#" * 118)
@@ -123,7 +101,6 @@ def main():
     print(f"GREEDY czas trasy:" + style_greedy_ok + f"{GREEDY_cost/60} minut" + Style.RESET_ALL)
 
     print(Fore.LIGHTGREEN_EX + "#" * 118 + Style.RESET_ALL)
-
 
 
 if __name__ == "__main__":
