@@ -62,7 +62,7 @@ def main():
     print(f"\nWłasny czas trasy:" + Fore.YELLOW + f"{ACO_cost/60} minut" + Style.RESET_ALL)
 
     # Wyświetlenie szczegółów
-    aco.print_summary(aco_vehicles)
+    aco_ok = problem.print_summary(aco_vehicles)
 
     visualizer = Visualizer(nodes)
     # visualizer.show(best_route, title="WŁASNY")
@@ -83,7 +83,7 @@ def main():
     print(f"\nGREEDY czas trasy:" + Fore.YELLOW + f"{GREEDY_cost/60} minut" + Style.RESET_ALL)
 
     # Wyświetlenie szczegółów
-    aco.print_summary(greedy_vehicles)
+    greedy_ok = problem.print_summary(greedy_vehicles)
 
     # visualizer.show(optimal_routes, title="GREEDY")
 
@@ -116,10 +116,11 @@ def main():
     print("\n" + Fore.LIGHTGREEN_EX + "#" * 118)
     print(f"{'PORÓWNANIE':^118}")
     print("-" * 118 + Style.RESET_ALL)
-    
-    print(f"Własny czas trasy:" + Fore.YELLOW + f"{ACO_cost/60} minut" + Style.RESET_ALL)
+    style_aco_ok = Fore.GREEN if aco_ok else Fore.RED
+    print(f"Własny czas trasy:" + style_aco_ok + f"{ACO_cost/60} minut" + Style.RESET_ALL)
     # print(f"OR-Tools cost: {GREEDY_cost / 60} minut")
-    print(f"GREEDY czas trasy:" + Fore.YELLOW + f"{GREEDY_cost/60} minut" + Style.RESET_ALL)
+    style_greedy_ok = Fore.GREEN if greedy_ok else Fore.RED
+    print(f"GREEDY czas trasy:" + style_greedy_ok + f"{GREEDY_cost/60} minut" + Style.RESET_ALL)
 
     print(Fore.LIGHTGREEN_EX + "#" * 118 + Style.RESET_ALL)
 
