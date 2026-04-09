@@ -1,10 +1,15 @@
 from datetime import datetime, timedelta
 from tqdm import tqdm
+from datetime import timedelta
+from colorama import Fore, Back, Style, init
+
 
 from VRP3.Ant import Ant
 from VRP3.VRP import VRP
 from VRP3.Vehicle import Vehicle
 
+# Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
+init(autoreset=True)
 
 class ACO_for_VRP:
 
@@ -83,6 +88,7 @@ class ACO_for_VRP:
             vehicle.filling = sum(node.demand for node in vehicle.route)
             capacity_penalty = 0
             if vehicle.filling > vehicle.capacity:  # Zakładamy równą pojemność lub bierzemy z v_obj
+                # print("Przeładowanie")
                 overload = vehicle.filling - vehicle.capacity
                 capacity_penalty = overload * 100  # Bardzo ciężka kara
 
@@ -94,9 +100,11 @@ class ACO_for_VRP:
                 if n.id != 0:
                     all_visited_ids.add(n.id)
 
-        # 3. Kara za nieodwiedzenie wszystkich (Safety net)
+        # 3. Kara za nieodwiedzenie wszystkich (Safety net) - nie wywyołuje się
         num_clients = len(self.problem.nodes) - 1
         if len(all_visited_ids) < num_clients:
+            missing = num_clients - len(all_visited_ids)
+            print(f"{Fore.RED}{Style.BRIGHT}  UWAGA: Nie odwiedzono wszystkich! Brakuje: {missing} klientów!{Style.RESET_ALL}")
             total_time += (num_clients - len(all_visited_ids)) * 1000
 
         return total_time, vehicles
@@ -170,36 +178,39 @@ class ACO_for_VRP:
 
             # Decyzja o przerwaniu
             if no_improvement_count >= patience:
-                print(f"\n[EARLY STOPPING] Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
+                print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
                 break
 
         return best_vehicles, best_cost
 
     def print_summary(self, vehicles):
-        """Wyświetla szczegółowy harmonogram, pojemności i podsumowanie czasowe."""
-        print("\n" + "=" * 115)
-        print(f"{'PODSUMOWANIE TRAS I HARMONOGRAM':^115}")
-        print("=" * 115)
+        """Wyświetla kolorowy, wyrównany harmonogram i statystyki końcowe."""
+        # Nagłówek główny
+        print("\n" + Fore.CYAN + Style.BRIGHT + "=" * 118)
+        print(f"{'PODSUMOWANIE TRAS I HARMONOGRAM':^118}")
+        print("-" * 118 + Style.RESET_ALL)
 
         time_matrix = self.problem.time_matrix_seconds
         grand_total_seconds = 0.0
-
-        # --- NOWE: Liczniki klientów ---
         total_clients_in_problem = len(self.problem.nodes) - 1
         visited_client_ids = set()
-        # ------------------------------
 
         for vehicle in vehicles:
             route = vehicle.route
             if len(route) <= 2:
                 continue
 
-            print(f"\n[ POJAZD ID: {vehicle.id:2d} | Pojemność Max: {vehicle.capacity} "
-                  f"| Pojemność użyta: {vehicle.filling} | Ilość klientów: {len(vehicle.route) - 2} ]")
+            # Kolorowanie nagłówka pojazdu (Zielony = OK, Czerwony = Przeładowany)
+            load_color = Fore.GREEN if vehicle.filling <= vehicle.capacity else Fore.RED
 
+            print(f"\n{Fore.YELLOW}# POJAZD ID: {vehicle.id:2d}{Style.RESET_ALL} | "
+                  f"Pojemność: {load_color}{vehicle.filling}/{vehicle.capacity}{Style.RESET_ALL} | "
+                  f"Klienci: {len(vehicle.route) - 2}")
+
+            # Nagłówek tabeli
             print(
-                f"{'Punkt':<12} | {'Pop':<5} | {'Auto':<6} | {'Okno czasowe':<15} | {'Przyjazd':<10} | {'Start serwisu':<15} | {'Odjazd':<10} | {'Info'}")
-            print("-" * 115)
+                f"{Style.DIM}{'Punkt':<12} | {'Pop':<5} | {'Auto':<6} | {'Okno czasowe':<15} | {'Przyjazd':<10} | {'Start serwisu':<15} | {'Odjazd':<10} | {'Info'}{Style.RESET_ALL}")
+            print("-" * 118)
 
             current_time_s = 0.0
             current_load = 0
@@ -208,66 +219,84 @@ class ACO_for_VRP:
                 node = route[i]
                 current_load += node.demand
 
-                # Dodajemy klienta do zbioru odwiedzonych (pomiń bazę id=0)
                 if node.id != 0:
                     visited_client_ids.add(node.id)
 
-                if i == 0:
-                    print(
-                        f"START Baza   | {node.demand:<5} | {current_load:<6} | {'-':<15} | {'-':<10} | {'00:00:00':<15} | 00:00:00   | Wyjazd")
-                    continue
-
-                travel_time = time_matrix[route[i - 1].id][node.id]
-                arrival_time_s = current_time_s + travel_time
-
+                # --- LOGIKA CZASOWA ---
                 wait_time_s = 0.0
                 penalty_s = 0.0
                 status_msg = ""
 
-                if node.id != 0:
-                    if arrival_time_s < node.time_window_s[0]:
-                        wait_time_s = node.time_window_s[0] - arrival_time_s
-                        status_msg = f"Czekanie: {wait_time_s / 60:.1f} min"
-                    elif arrival_time_s > node.time_window_s[1]:
-                        penalty_s = node.penalty_s[1]
-                        status_msg = f"KARA: {penalty_s / 60:.1f} min"
-
-                start_service_s = arrival_time_s + wait_time_s + penalty_s
-
-                if node.id == 0:
-                    departure_time_s = arrival_time_s
-                    label = "KONIEC Baza"
+                if i == 0:
+                    # Start z bazy
+                    arrival_time_s = 0.0
+                    start_service_s = 0.0
+                    departure_time_s = 0.0
+                    label = f"{Fore.BLUE}START Baza  {Fore.RESET}"
+                    tw_str = "-"
+                    status_msg = "Wyjazd"
                 else:
-                    departure_time_s = start_service_s + node.service_s
-                    label = f"Klient {node.id}"
+                    # Dojazd do klienta lub powrót do bazy
+                    travel_time = time_matrix[route[i - 1].id][node.id]
+                    arrival_time_s = current_time_s + travel_time
 
-                arr_str = str(timedelta(seconds=int(arrival_time_s)))
+                    if node.id != 0:
+                        # Sprawdzanie okien czasowych tylko dla klientów
+                        if arrival_time_s < node.time_window_s[0]:
+                            wait_time_s = node.time_window_s[0] - arrival_time_s
+                            status_msg = f"{Fore.CYAN}Czekanie: {wait_time_s / 60:.1f} min{Fore.RESET}"
+                        elif arrival_time_s > node.time_window_s[1]:
+                            penalty_s = node.penalty_s[1]
+                            status_msg = f"{Fore.RED}{Style.BRIGHT}KARA: {penalty_s / 60:.1f} min{Style.RESET_ALL}"
+
+                        start_service_s = arrival_time_s + wait_time_s + penalty_s
+                        departure_time_s = start_service_s + node.service_s
+                        label = f"Klient {node.id:<4}"
+                        tw_str = f"{node.time_window[0].strftime('%H:%M')}-{node.time_window[1].strftime('%H:%M')}"
+                    else:
+                        # Powrót do bazy (id=0)
+                        start_service_s = arrival_time_s
+                        departure_time_s = arrival_time_s
+                        label = f"{Fore.BLUE}KONIEC Baza {Fore.RESET}"
+                        tw_str = f"{node.time_window[0].strftime('%H:%M')}-{node.time_window[1].strftime('%H:%M')}"
+
+                # --- FORMATOWANIE STRINGÓW ---
+                arr_str = str(timedelta(seconds=int(arrival_time_s))) if i > 0 else "-"
                 start_str = str(timedelta(seconds=int(start_service_s)))
                 dep_str = str(timedelta(seconds=int(departure_time_s)))
-                tw_str = f"{node.time_window[0].strftime('%H:%M')}-{node.time_window[1].strftime('%H:%M')}"
 
+                # WYŚWIETLANIE WIERSZA (Szerokość punktu 21 wyrównuje kolumny z kolorami ANSI)
                 print(
-                    f"{label:<12} | {node.demand:<5} | {current_load:<6} | {tw_str:<15} | {arr_str:<10} | {start_str:<15} | {dep_str:<10} | {status_msg}")
+                    f"{label:<12} | "
+                    f"{node.demand:<5} | "
+                    f"{current_load:<6} | "
+                    f"{tw_str:<15} | "
+                    f"{arr_str:<10} | "
+                    f"{start_str:<15} | "
+                    f"{dep_str:<10} | "
+                    f"{status_msg}"
+                )
 
                 current_time_s = departure_time_s
 
-            vehicle_total_min = current_time_s / 60
             grand_total_seconds += current_time_s
-            print(f"--- Czas trasy pojazdu {vehicle.id}: {vehicle_total_min:.2f} min ---")
+            print(f"{Style.DIM}--- Czas trasy: {current_time_s / 60:.2f} min ---{Style.RESET_ALL}")
 
-        # --- NOWE: Rozszerzone podsumowanie dolne ---
+        # --- STOPKA ZBIORCZA ---
         num_visited = len(visited_client_ids)
-        print("\n" + "=" * 115)
-        print(f"{'STATYSTYKI KOŃCOWE':^115}")
-        print("-" * 115)
-        print(f"  Odwiedzeni klienci: {num_visited} / {total_clients_in_problem} "
-              f"({(num_visited / total_clients_in_problem) * 100:.1f}%)")
+        print("\n" + Fore.CYAN + "=" * 118)
+        print(f"{'STATYSTYKI KOŃCOWE':^118}")
+        print("-" * 118 + Style.RESET_ALL)
 
-        # Alert jeśli nie wszyscy obsłużeni
+        visit_color = Fore.GREEN if num_visited == total_clients_in_problem else Fore.RED
+        print(
+            f"  Odwiedzeni klienci: {visit_color}{num_visited} / {total_clients_in_problem} ({(num_visited / total_clients_in_problem) * 100:.1f}%){Style.RESET_ALL}")
+
         if num_visited < total_clients_in_problem:
             missing = total_clients_in_problem - num_visited
-            print(f"  UWAGA: Nie obsłużono {missing} klientów!")
+            print(
+                f"{Fore.WHITE}{Style.BRIGHT}  UWAGA: NIE ODWIEDZONO WSZYSTKICH! BRAKUJE: {missing} KLIENTÓW!  {Style.RESET_ALL}")
 
-        print(f"  Łączny koszt czasowy (z karami): {grand_total_seconds / 60:.2f} min")
+        print(f"  Łączny koszt czasowy floty: {Fore.YELLOW}{grand_total_seconds / 60:.2f} min{Style.RESET_ALL}")
         print(f"  Użyte pojazdy: {len([v for v in vehicles if len(v.route) > 2])} / {len(vehicles)}")
-        print("=" * 115)
+        print(Fore.CYAN + "=" * 118 + Style.RESET_ALL)
