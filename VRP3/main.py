@@ -3,12 +3,13 @@ from VRP3.VRP import VRP
 from VRP3.ACO_for_VRP import ACO_for_VRP
 from VRP3.Visualizer import Visualizer, plt
 from VRP3.VRP_solver import solve_vrp
+from VRP3.Gready import greedy_vrp
 
 
 def main():
 
     # 1️⃣ generowanie klientów
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=20, seed=54)
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=30, seed=54)
     # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
 
     nodes, vehicles = generator.generate()
@@ -47,30 +48,53 @@ def main():
     visualizer = Visualizer(nodes)
     visualizer.show(best_route, title="WŁASNY")
 
-    # 5 OR-TOOLS
-    optimal_vehicles, optimal_cost = solve_vrp(
-        nodes,
-        problem.time_matrix_seconds,
-        vehicles
-    )
+    # 5 GREEDY
+    optimal_vehicles, optimal_cost = greedy_vrp(nodes, problem.time_matrix_seconds, problem.vehicles)
     print("\n"), print("-" * 100)
-    print("\nOR-Tools - VRP  - Najlepsza trasa:")
+    print("\nGready  - VRP  - Najlepsza trasa:")
     optimal_routes = [v.route for v in optimal_vehicles]
     indices = [[node.id for node in route] for route in optimal_routes]
     for i, route in enumerate(indices):
         print(f"id={i} filled={optimal_vehicles[i].filling}/{optimal_vehicles[i].capacity} \n\troute: ", end="")
         print(" -> ".join(map(str, route)))
-    
-    print(f"\nOR-Tools cost: {optimal_cost/60} minut")
+
+    print(f"\nGREEDY cost: {optimal_cost / 60} minut")
 
     # Wyświetlenie szczegółów
     aco.print_summary(optimal_vehicles)
 
-    visualizer.show(optimal_routes, title="OR-TOOLS")
+    visualizer.show(optimal_routes, title="GREEDY")
+
+    # # 6 OR-TOOLS
+    # optimal_vehicles, optimal_cost = solve_vrp(
+    #     nodes,
+    #     problem.time_matrix_seconds,
+    #     vehicles
+    # )
+    # print("\n"), print("-" * 100)
+    # print("\nOR-Tools - VRP  - Najlepsza trasa:")
+    # optimal_routes = [v.route for v in optimal_vehicles]
+    # indices = [[node.id for node in route] for route in optimal_routes]
+    # for i, route in enumerate(indices):
+    #     print(f"id={i} filled={optimal_vehicles[i].filling}/{optimal_vehicles[i].capacity} \n\troute: ", end="")
+    #     print(" -> ".join(map(str, route)))
+    #
+    # print(f"\nOR-Tools cost: {optimal_cost/60} minut")
+    #
+    # # Wyświetlenie szczegółów
+    # aco.print_summary(optimal_vehicles)
+    #
+    # visualizer.show(optimal_routes, title="OR-TOOLS")
+    #
+    # print("\n"), print("-" * 100)
+    # print(f"\nWłasny czas trasy: {best_cost/60} minut")
+    # print(f"OR-Tools cost: {optimal_cost/60} minut")
 
     print("\n"), print("-" * 100)
-    print(f"\nWłasny czas trasy: {best_cost/60} minut")
-    print(f"OR-Tools cost: {optimal_cost/60} minut")
+    print(f"\nWłasny czas trasy: {best_cost / 60} minut")
+    # print(f"OR-Tools cost: {optimal_cost / 60} minut")
+    print(f"GREEDY cost: {optimal_cost / 60} minut")
+
 
 if __name__ == "__main__":
     main()
