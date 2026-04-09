@@ -84,7 +84,7 @@ class ACO_for_VRP:
             capacity_penalty = 0
             if vehicle.filling > vehicle.capacity:  # Zakładamy równą pojemność lub bierzemy z v_obj
                 overload = vehicle.filling - vehicle.capacity
-                capacity_penalty = overload * 10000  # Bardzo ciężka kara
+                capacity_penalty = overload * 100  # Bardzo ciężka kara
 
             # total_time = max(self.route_cost(route), total_time)
             total_time += (r_time_cost + capacity_penalty)
@@ -97,7 +97,7 @@ class ACO_for_VRP:
         # 3. Kara za nieodwiedzenie wszystkich (Safety net)
         num_clients = len(self.problem.nodes) - 1
         if len(all_visited_ids) < num_clients:
-            total_time += (num_clients - len(all_visited_ids)) * 100000
+            total_time += (num_clients - len(all_visited_ids)) * 1000
 
         return total_time, vehicles
 
@@ -177,12 +177,17 @@ class ACO_for_VRP:
 
     def print_summary(self, vehicles):
         """Wyświetla szczegółowy harmonogram, pojemności i podsumowanie czasowe."""
-        print("\n" + "=" * 115)  # Rozszerzona linia dla nowych kolumn
+        print("\n" + "=" * 115)
         print(f"{'PODSUMOWANIE TRAS I HARMONOGRAM':^115}")
         print("=" * 115)
 
         time_matrix = self.problem.time_matrix_seconds
         grand_total_seconds = 0.0
+
+        # --- NOWE: Liczniki klientów ---
+        total_clients_in_problem = len(self.problem.nodes) - 1
+        visited_client_ids = set()
+        # ------------------------------
 
         for vehicle in vehicles:
             route = vehicle.route
@@ -190,8 +195,8 @@ class ACO_for_VRP:
                 continue
 
             print(f"\n[ POJAZD ID: {vehicle.id:2d} | Pojemność Max: {vehicle.capacity} "
-                  f"| Pojemność użyta: {vehicle.filling} | Ilość klientów: {len(vehicle.route)-2} ]")
-            # Nagłówek z nowymi kolumnami: Pop (Popyt punktu) | Auto (Ładunek w aucie)
+                  f"| Pojemność użyta: {vehicle.filling} | Ilość klientów: {len(vehicle.route) - 2} ]")
+
             print(
                 f"{'Punkt':<12} | {'Pop':<5} | {'Auto':<6} | {'Okno czasowe':<15} | {'Przyjazd':<10} | {'Start serwisu':<15} | {'Odjazd':<10} | {'Info'}")
             print("-" * 115)
@@ -201,21 +206,20 @@ class ACO_for_VRP:
 
             for i in range(len(route)):
                 node = route[i]
-
-                # Aktualizacja ładunku (popyt punktu)
                 current_load += node.demand
 
+                # Dodajemy klienta do zbioru odwiedzonych (pomiń bazę id=0)
+                if node.id != 0:
+                    visited_client_ids.add(node.id)
+
                 if i == 0:
-                    # Start z bazy
                     print(
                         f"START Baza   | {node.demand:<5} | {current_load:<6} | {'-':<15} | {'-':<10} | {'00:00:00':<15} | 00:00:00   | Wyjazd")
                     continue
 
-                # 1. Dojazd
                 travel_time = time_matrix[route[i - 1].id][node.id]
                 arrival_time_s = current_time_s + travel_time
 
-                # 2. Logika okien czasowych
                 wait_time_s = 0.0
                 penalty_s = 0.0
                 status_msg = ""
@@ -228,23 +232,20 @@ class ACO_for_VRP:
                         penalty_s = node.penalty_s[1]
                         status_msg = f"KARA: {penalty_s / 60:.1f} min"
 
-                # 3. Rozpoczęcie obsługi i odjazd
                 start_service_s = arrival_time_s + wait_time_s + penalty_s
 
-                if node.id == 0:  # Powrót do bazy
+                if node.id == 0:
                     departure_time_s = arrival_time_s
                     label = "KONIEC Baza"
                 else:
                     departure_time_s = start_service_s + node.service_s
                     label = f"Klient {node.id}"
 
-                # Formatowanie
                 arr_str = str(timedelta(seconds=int(arrival_time_s)))
                 start_str = str(timedelta(seconds=int(start_service_s)))
                 dep_str = str(timedelta(seconds=int(departure_time_s)))
                 tw_str = f"{node.time_window[0].strftime('%H:%M')}-{node.time_window[1].strftime('%H:%M')}"
 
-                # Wyświetlanie wiersza z uwzględnieniem Pop i Auto
                 print(
                     f"{label:<12} | {node.demand:<5} | {current_load:<6} | {tw_str:<15} | {arr_str:<10} | {start_str:<15} | {dep_str:<10} | {status_msg}")
 
@@ -252,9 +253,21 @@ class ACO_for_VRP:
 
             vehicle_total_min = current_time_s / 60
             grand_total_seconds += current_time_s
-            print(f"--- Czas trasy pojazdu {vehicle.id}: {vehicle_total_min:.2f} min ({current_time_s:.0f} sek) ---")
+            print(f"--- Czas trasy pojazdu {vehicle.id}: {vehicle_total_min:.2f} min ---")
 
+        # --- NOWE: Rozszerzone podsumowanie dolne ---
+        num_visited = len(visited_client_ids)
         print("\n" + "=" * 115)
-        print(f"{'ŁĄCZNY KOSZT WSZYSTKICH TRAS: ' + f'{grand_total_seconds / 60:.2f}' + ' MINUT':^115}")
-        print(f"{'ŁĄCZNY KOSZT W SEKUNDACH: ' + f'{grand_total_seconds:.0f}' + ' s':^115}")
+        print(f"{'STATYSTYKI KOŃCOWE':^115}")
+        print("-" * 115)
+        print(f"  Odwiedzeni klienci: {num_visited} / {total_clients_in_problem} "
+              f"({(num_visited / total_clients_in_problem) * 100:.1f}%)")
+
+        # Alert jeśli nie wszyscy obsłużeni
+        if num_visited < total_clients_in_problem:
+            missing = total_clients_in_problem - num_visited
+            print(f"  UWAGA: Nie obsłużono {missing} klientów!")
+
+        print(f"  Łączny koszt czasowy (z karami): {grand_total_seconds / 60:.2f} min")
+        print(f"  Użyte pojazdy: {len([v for v in vehicles if len(v.route) > 2])} / {len(vehicles)}")
         print("=" * 115)

@@ -9,7 +9,7 @@ from VRP3.Gready import greedy_vrp
 def main():
 
     # 1️⃣ generowanie klientów
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=30, seed=54)
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=20, seed=54)
     # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
 
     nodes, vehicles = generator.generate()
@@ -28,9 +28,9 @@ def main():
     problem = VRP(nodes, vehicles=vehicles)
 
     # 3️⃣ uruchomienie algorytmu mrówkowego
-    aco = ACO_for_VRP(problem, ants=50, iterations=1000, alpha=1, beta=2, evaporation=0.05)
+    aco = ACO_for_VRP(problem, ants=100, iterations=1000, alpha=1, beta=2, evaporation=0.05)
 
-    best_vehicles, best_cost = aco.run()
+    best_vehicles, best_cost = aco.run(patience=300)
 
     # 4️⃣ wyniki
     print("\nWłasne VRP - Najlepsza trasa:")
@@ -46,7 +46,7 @@ def main():
     aco.print_summary(best_vehicles)
 
     visualizer = Visualizer(nodes)
-    visualizer.show(best_route, title="WŁASNY")
+    # visualizer.show(best_route, title="WŁASNY")
 
     # 5 GREEDY
     optimal_vehicles, optimal_cost = greedy_vrp(nodes, problem.time_matrix_seconds, problem.vehicles)
@@ -63,7 +63,7 @@ def main():
     # Wyświetlenie szczegółów
     aco.print_summary(optimal_vehicles)
 
-    visualizer.show(optimal_routes, title="GREEDY")
+    # visualizer.show(optimal_routes, title="GREEDY")
 
     # # 6 OR-TOOLS
     # optimal_vehicles, optimal_cost = solve_vrp(

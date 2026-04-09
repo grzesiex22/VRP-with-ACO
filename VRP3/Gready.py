@@ -6,6 +6,11 @@ def greedy_vrp(nodes, time_matrix, vehicles):
         current_node = vehicle.route[-1]
         travel = time_matrix[current_node.id][next_node.id]
         arrival = vehicle.duration + travel
+
+        # Jeśli wracamy do bazy (id=0), nie liczymy czekania ani kar
+        if next_node.id == 0:
+            return travel
+
         wait = max(next_node.time_window_s[0] - arrival, 0)
         penalty = next_node.penalty_s[1] if arrival > next_node.time_window_s[1] else 0
         return travel + wait + penalty + next_node.service_s
