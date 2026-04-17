@@ -3,8 +3,8 @@ from tqdm import tqdm
 from datetime import timedelta
 from colorama import Fore, Back, Style, init
 
+from VRP3.Ant_1 import Ant
 
-from VRP3.Ant import Ant
 from VRP3.VRP import VRP
 from VRP3.Vehicle import Vehicle
 
@@ -12,7 +12,7 @@ from VRP3.Vehicle import Vehicle
 init(autoreset=True)
 
 
-class ACO_for_VRP:
+class ACO_for_VRP_1:
 
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05):
 

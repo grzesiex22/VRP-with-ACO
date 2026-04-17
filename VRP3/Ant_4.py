@@ -16,8 +16,12 @@ class Ant:
         self.gtr = [depot]
         current = depot
 
+        free_space = [v.capacity for v in self.problem.vehicles]
+        space_idx = 0
+
         unvisited = [node for node in self.problem.nodes if node.id != 0]
         vehicle_count = len(self.problem.vehicles)
+
         for _ in range(vehicle_count - 1):
             unvisited.append(depot)
 
@@ -47,11 +51,15 @@ class Ant:
                 p_dist = [p / total for p in probs]
                 next_node = random.choices(candidates, p_dist)[0]
 
+                if next_node.demand > free_space[space_idx % len(free_space)]:
+                    space_idx += 1
+                    self.gtr.append(depot)
+
                 self.gtr.append(next_node)
+                free_space[space_idx % len(free_space)] -= next_node.demand
                 unvisited.remove(next_node)
                 current = next_node
 
         # Zawsze kończymy w bazie
         if self.gtr[-1].id != 0:
             self.gtr.append(depot)
-
