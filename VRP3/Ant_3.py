@@ -8,6 +8,7 @@ class Ant:
     def __init__(self, problem: VRP):
         self.problem = problem
         self.gtr = []
+        self.cost = 0
 
     def build_route(self, pheromone, alpha, beta):
 

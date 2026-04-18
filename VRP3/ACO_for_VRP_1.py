@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+
+import numpy as np
 from tqdm import tqdm
 from datetime import timedelta
 from colorama import Fore, Back, Style, init
@@ -14,18 +16,31 @@ init(autoreset=True)
 
 class ACO_for_VRP_1:
 
-    def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05):
+    def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
+                 tau_min=0.01, tau_max=5.0):
 
         self.problem = problem
         self.ants = ants
         self.iterations = iterations
 
         n = len(problem.nodes)
-        self.pheromone = [[1]*n for _ in range(n)]
+        self.pheromone = np.ones((n, n))
 
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
+
+        # ograniczenia feromonu
+        self.tau_max = tau_max
+        self.tau_min = tau_min
+
+        # do szybszego odczytu potęg
+        self.eta_matrix = (1.0 / (np.array(self.problem.time_matrix_seconds) + 1e-6)) ** self.beta
+
+        # Tablice do przechowywania historii (do wykresu)
+        self.history_best_overall = []  # Najlepszy koszt
+        self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
+        self.history_avg_in_iter = []  # Średni koszt w danej iteracj
 
     def chop_gtr(self, route):
         routes = []
@@ -112,11 +127,13 @@ class ACO_for_VRP_1:
 
     def evaporate(self):
 
-        n = len(self.pheromone)
+        self.pheromone *= (1 - self.evaporation)
 
-        for i in range(n):
-            for j in range(n):
-                self.pheromone[i][j] *= (1 - self.evaporation)
+        # n = len(self.pheromone)
+        #
+        # for i in range(n):
+        #     for j in range(n):
+        #         self.pheromone[i][j] *= (1 - self.evaporation)
 
     def update_pheromone(self, ants):
         # parowanie feromonu
@@ -125,15 +142,15 @@ class ACO_for_VRP_1:
         # dodanie nowych feromonów
         for ant in ants:
 
-            route = ant.gtr
-            cost, _ = self.solution_cost(route)
+            ids = [node.id for node in ant.gtr]
+            d_tau = 1.0 / ant.cost
 
-            for i in range(len(route) - 1):
-                a = route[i]
-                b = route[i + 1]
+            for i in range(len(ids) - 1):
+                a, b = ids[i], ids[i + 1]
+                self.pheromone[a, b] += d_tau
+                self.pheromone[b, a] += d_tau
 
-                self.pheromone[a.id][b.id] += 1 / cost
-                self.pheromone[b.id][a.id] += 1 / cost
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
     def run(self, patience=100):
 
@@ -141,20 +158,31 @@ class ACO_for_VRP_1:
         best_cost = float("inf")
         no_improvement_count = 0
 
+        # Tablice do przechowywania historii (do wykresu)
+        self.history_best_overall = []  # Najlepszy koszt
+        self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
+        self.history_avg_in_iter = []  # Średni koszt w danej iteracji
+
         # Tworzymy pasek postępu
         pbar = tqdm(range(self.iterations), desc="ACO Optimization", unit="it")
 
         for i in pbar:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
+            pheromone_alpha = self.pheromone ** self.alpha
+
             found_better_in_iter = False
+            iter_costs = []
 
             for ant in ants:
 
                 #### tu zrównoleglić
-                ant.build_route(self.pheromone, self.alpha, self.beta)
+                ant.build_route(pheromone_alpha, self.eta_matrix)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
+                ant.cost = cost
+
+                iter_costs.append(cost)
 
                 if cost < best_cost:
                     best_cost = cost
@@ -163,8 +191,12 @@ class ACO_for_VRP_1:
                     found_better_in_iter = True
                 #### tu zrównoleglić - koniec
 
-                # early stoping
                 # można podbijać losowo feromony gdy stagnacja
+
+            # Zapisujemy historię
+            self.history_best_overall.append(best_cost)
+            self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
+            self.history_best_in_iter.append(min(iter_costs))
 
             self.update_pheromone(ants)
 
@@ -182,5 +214,11 @@ class ACO_for_VRP_1:
                 print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
                 break
 
-        return best_vehicles, best_cost
+        history_data = {
+            'overall': self.history_best_overall,
+            'avg': self.history_avg_in_iter,
+            'iter_best': self.history_best_in_iter
+        }
+
+        return best_vehicles, best_cost, history_data
 

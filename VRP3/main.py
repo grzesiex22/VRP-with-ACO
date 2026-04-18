@@ -8,9 +8,12 @@ from VRP3.ACO_for_VRP_3 import ACO_for_VRP_3
 from VRP3.ACO_for_VRP_4 import ACO_for_VRP_4
 from VRP3.Visualizer import Visualizer, plt
 from VRP3.Gready import greedy_vrp
+from VRP3.Plotter import Plotter
 
 
 VISUALIZE = True
+SHOW_PLOT_CONV = False
+DATASET = "Dataset_01"
 
 
 def main():
@@ -18,7 +21,7 @@ def main():
     init(autoreset=True)
 
     #  --- 1. GENERACJA DANYCH ---
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=54)
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=80, seed=54)
     # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
 
     nodes, vehicles = generator.generate()
@@ -44,76 +47,9 @@ def main():
     #  --- 2. stworzenie problemu VRP ---
     problem = VRP(nodes, vehicles=vehicles)
 
-    # --- 3. ACO ---
-    aco_configs = [
-        {
-            "name": "ACO 1 (without constraints)",
-            "class": ACO_for_VRP_1,
-            "params": {"ants": 100, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 300}
-        },
-        {
-            "name": "ACO 2 (seq.)",
-            "class": ACO_for_VRP_2,
-            "params": {"ants": 100, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 300}
-        },
-        {
-            "name": "ACO 3 (seq. with local search)",
-            "class": ACO_for_VRP_3,
-            "params": {"ants": 100, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 300}
-        },
-        # {
-        #     "name": "ACO 4 (seq. wersja grzesia)",
-        #     "class": ACO_for_VRP_4,
-        #     "params": {"ants": 100, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 300}
-        # }
-    ]
+    results_summary = {}  # Słownik do przechowywania wyników dla tabeli końcowej
 
-    # Słownik do przechowywania wyników dla tabeli końcowej
-    results_summary = {}
-
-    # --- PĘTLA TESTUJĄCA ---
-    for config in aco_configs:
-        name = config["name"]
-        ACO_Class = config["class"]  # Dynamiczne przypisanie klasy
-        p = config["params"]
-
-        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
-        print(f"{name.upper():^118}")
-        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + "\n")
-
-        # Inicjalizacja instancji konkretnej klasy
-        aco_instance = ACO_Class(
-            problem,
-            ants=p["ants"],
-            iterations=p["iter"],
-            alpha=p["alpha"],
-            beta=p["beta"],
-            evaporation=p["evap"]
-        )
-
-        # Uruchomienie
-        vehicles, cost = aco_instance.run(patience=p["patience"])
-
-        # Przechowywanie wyników
-        results_summary[name] = {"cost": cost, "vehicles": vehicles}
-
-        # Podgląd tras w konsoli
-        print(f"\n{name} - Najlepsza trasa:")
-        for v in vehicles:
-            if len(v.route) > 2:
-                route_ids = [n.id for n in v.route]
-                print(f"  Pojazd {v.id}: {' -> '.join(map(str, route_ids))} ({v.filling}/{v.capacity})")
-
-        # Szczegółowe podsumowanie z kolorami
-        # (Metoda print_summary powinna zwracać True/False jeśli to możliwe)
-        is_ok = problem.print_summary(vehicles)
-        results_summary[name]["is_ok"] = is_ok
-
-        if VISUALIZE:
-            visualizer = Visualizer(nodes)
-            visualizer.show([v.route for v in vehicles], title=name)
-
-    # --- 4. ALGORYTM GREEDY (Punkt odniesienia) ---
+    # --- 3. ALGORYTM GREEDY (Punkt odniesienia) ---
     print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
     print(f"{'ALGORYTM GREADY':^118}")
     print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
@@ -139,31 +75,124 @@ def main():
         visualizer = Visualizer(nodes)
         visualizer.show(optimal_routes, title="GREEDY")
 
-    # --- 5. FINALNE PORÓWNANIE ZBIORCZE ---
-    print("\n" + Fore.LIGHTGREEN_EX + Style.BRIGHT + "#" * 118)
-    print(f"{'TABELA PORÓWNAWCZA WYNIKÓW':^118}")
-    print("-" * 118)
+    # --- 4. ACO ---
+    plotter = Plotter()
+    aco_configs = [
+        {
+            "name": "ACO 1 (without constraints)",
+            "class": ACO_for_VRP_1,
+            "params": {"ants": 60, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.01, "patience": 200}
+        },
+        {
+            "name": "ACO 2 (seq.)",
+            "class": ACO_for_VRP_2,
+            "params": {"ants": 60, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.01, "patience": 200}
+        },
+        {
+            "name": "ACO 3 (seq. with local search)",
+            "class": ACO_for_VRP_3,
+            "params": {"ants": 60, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.01, "patience": 200}
+        },
+        {
+            "name": "ACO 4 (seq. wersja grzesia)",
+            "class": ACO_for_VRP_4,
+            "params": {"ants": 60, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 200}
+        }
+    ]
 
-    # Nagłówki tabeli
-    print(f"{'Nazwa Algorytmu':<25} | {'Koszt [min]':<15} | {'Status':<15} | {'Użyte auta':<10}")
-    print("-" * 118)
+    # --- PĘTLA TESTUJĄCA ---
+    for config in aco_configs:
+        name = config["name"]
+        ACO_Class = config["class"]  # Dynamiczne przypisanie klasy
+        p = config["params"]
+
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{name.upper():^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + "\n")
+
+        # Inicjalizacja instancji konkretnej klasy
+        aco_instance = ACO_Class(
+            problem,
+            ants=p["ants"],
+            iterations=p["iter"],
+            alpha=p["alpha"],
+            beta=p["beta"],
+            evaporation=p["evap"]
+        )
+
+        # Uruchomienie
+        vehicles, cost, history = aco_instance.run(patience=p["patience"])
+
+        # 2. Plotowanie
+        plotter.plot_single_aco(
+            name=config["name"],
+            history=history,
+            greedy_baseline=greedy_cost,
+            save=True,  # Flaga zapisu
+            show=SHOW_PLOT_CONV,
+            dataset=DATASET  # Twoja własna nazwa początkowa
+        )
+
+        # Podgląd tras w konsoli
+        print(f"\n{name} - Najlepsza trasa:")
+        for v in vehicles:
+            if len(v.route) > 2:
+                route_ids = [n.id for n in v.route]
+                print(f"  Pojazd {v.id}: {' -> '.join(map(str, route_ids))} ({v.filling}/{v.capacity})")
+
+        # Szczegółowe podsumowanie z kolorami
+        is_ok = problem.print_summary(vehicles)
+
+        # Przechowywanie wyników
+        results_summary[name] = {"cost": cost, "vehicles": vehicles, "is_ok": is_ok}
+
+        if VISUALIZE:
+            visualizer = Visualizer(nodes)
+            visualizer.show([v.route for v in vehicles], title=name)
+
+    # --- 5. FINALNE PORÓWNANIE ZBIORCZE ---
+    # Obliczamy maksymalną liczbę pojazdów, aby wiedzieć, ile kolumn narysować
+    max_v_count = len(problem.vehicles)
+    line_width = 65 + (max_v_count * 22)  # Dynamiczna szerokość linii
+
+    print("\n" + Fore.LIGHTGREEN_EX + Style.BRIGHT + "#" * line_width)
+    print(f"{'ZAAWANSOWANA TABELA PORÓWNAWCZA WYNIKÓW':^{line_width}}")
+    print("-" * line_width)
+
+    # Nagłówki tabeli (Nazwa, Koszt, Status + Kolumny dla aut)
+    header = f"{'Nazwa Algorytmu':<30} | {'Koszt [min]':<11} | {'Status':<8} |"
+    for i in range(max_v_count):
+        veh_str = f"Pojazd {i}"
+        header += f" {veh_str:<14} |"
+    print(header)
+    print("-" * line_width)
 
     for name, res in results_summary.items():
         cost_min = res["cost"] / 60
-        status_text = "OK" if res["is_ok"] else "BŁĄD/KARY"
+        status_text = "OK" if res["is_ok"] else "NOK"
         status_color = Fore.GREEN if res["is_ok"] else Fore.RED
 
-        # Liczymy tylko pojazdy, które faktycznie wyjechały
-        used_v = len([v for v in res["vehicles"] if len(v.route) > 2])
+        # Start wiersza
+        row = f"{name:<30} | {Fore.YELLOW}{cost_min:>11.2f}{Style.RESET_ALL} | {status_color}{status_text:<8}{Style.RESET_ALL} |"
 
-        # Wyróżnienie najlepszego wyniku (najmniejszego kosztu)
-        # Szukamy minimum tylko wśród poprawnych (res["is_ok"])
-        is_best = False  # (Tu można dodać logikę szukania najlepszego)
+        # Dane dla każdego pojazdu
+        for i in range(max_v_count):
+            if i < len(res["vehicles"]):            # Liczba klientów (bez bazy na początku i końcu)
+                v = res["vehicles"][i]
+                client_count = max(0, len(v.route) - 2)
 
-        print(f"{name:<25} | {Fore.YELLOW}{cost_min:>10.2f} min{Style.RESET_ALL} | "
-              f"{status_color}{status_text:<15}{Style.RESET_ALL} | {used_v:>5}")
+                # Kolorystyka zapełnienia
+                v_color = Fore.GREEN if v.filling <= v.capacity else Fore.RED
+                if client_count == 0: v_color = Style.DIM  # Szary dla nieużywanych aut
 
-    print(Fore.LIGHTGREEN_EX + "#" * 118 + Style.RESET_ALL)
+                # Formatowanie: K (Klienci), Z (Zapełnienie)
+                v_info = f"K:{client_count:<2} Z:{v.filling:>3}/{v.capacity}"
+                row += f" {v_color}{v_info:<14}{Style.RESET_ALL} |"
+            else:
+                row += f" {'-':^14} |"
+        print(row)
+
+    print(Fore.LIGHTGREEN_EX + "#" * line_width + Style.RESET_ALL)
 
 
 if __name__ == "__main__":

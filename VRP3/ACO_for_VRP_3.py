@@ -34,6 +34,11 @@ class ACO_for_VRP_3:
         self.beta = beta
         self.evaporation = evaporation
 
+        # Tablice do przechowywania historii (do wykresu)
+        self.history_best_overall = []  # Najlepszy koszt
+        self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
+        self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+
     def chop_gtr(self, route):
         routes = []
         current_route = []
@@ -133,7 +138,7 @@ class ACO_for_VRP_3:
         for ant in ants:
 
             route = ant.gtr
-            cost, _ = self.solution_cost(route)
+            cost = ant.cost
 
             for i in range(len(route) - 1):
                 a = route[i]
@@ -242,6 +247,11 @@ class ACO_for_VRP_3:
         best_iter = None
         best_iter_cost = sys.maxsize
 
+        # Tablice do przechowywania historii (do wykresu)
+        self.history_best_overall = []  # Najlepszy koszt
+        self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
+        self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+
         # Tworzymy pasek postępu
         pbar = tqdm(range(self.iterations), desc="ACO Optimization", unit="it")
 
@@ -249,16 +259,21 @@ class ACO_for_VRP_3:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
             found_better_in_iter = False
+            iter_costs = []
 
             for ant in ants:
                 #### tu zrównoleglić
                 ant.build_route(self.pheromone, self.alpha, self.beta)
+
                 for i in range(5):
                     self.local_swap(ant.gtr)
                 if random.random() < 0.3:
                     self.two_opt(ant.gtr, 10)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
+                ant.cost = cost
+
+                iter_costs.append(cost)
 
                 # ELITSIM
                 # best_iter_costs = [sys.maxsize]
@@ -289,6 +304,11 @@ class ACO_for_VRP_3:
                 #### tu zrównoleglić - koniec
 
                 # można podbijać losowo feromony gdy stagnacja
+
+            # Zapisujemy historię
+            self.history_best_overall.append(best_cost)
+            self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
+            self.history_best_in_iter.append(min(iter_costs))
 
             self.evaporate()
 
@@ -334,4 +354,10 @@ class ACO_for_VRP_3:
                 no_improvement_count = 0
                 # print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
 
-        return best_vehicles, best_cost
+        history_data = {
+            'overall': self.history_best_overall,
+            'avg': self.history_avg_in_iter,
+            'iter_best': self.history_best_in_iter
+        }
+
+        return best_vehicles, best_cost, history_data

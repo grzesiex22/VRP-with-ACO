@@ -8,6 +8,7 @@ from VRP3.Vehicle import Vehicle
 # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
 init(autoreset=True)
 
+
 class VRP:
 
     def __init__(self, nodes: [Node], vehicles: [Vehicle], depot_index=0):

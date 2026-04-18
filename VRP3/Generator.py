@@ -38,6 +38,8 @@ class Generator:
             y = random.randint(self.y0, self.y1)
 
             if i == 0:
+                x = self.x0 + (self.x1 - self.x0)/2
+                y = self.y0 + (self.y1 - self.y0)/2
                 d = 0
                 s = 0
                 hour1 = 0

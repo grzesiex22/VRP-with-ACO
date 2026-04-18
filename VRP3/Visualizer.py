@@ -12,6 +12,8 @@ class Visualizer:
             "brown", "pink", "gray", "olive", "cyan"
         ]
 
+        plt.ion()
+
     def draw_nodes(self):
 
         x = [node.x for node in self.nodes]
@@ -79,4 +81,6 @@ class Visualizer:
         plt.ylabel("Y")
 
         plt.grid(True)
+        plt.draw()  # Odświeża rysunek
         plt.show(block=False)
+        # plt.pause(2)  # Czeka 2 sekundy, pozwalając systemowi narysować okno

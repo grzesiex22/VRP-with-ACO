@@ -8,10 +8,10 @@ class Ant:
     def __init__(self, problem: VRP):
         self.problem = problem
         self.gtr = []
+        self.cost = 0
 
-    def build_route(self, pheromone, alpha, beta):
+    def build_route(self, pheromone_alpha_matrix, eta_matrix):
 
-        time = self.problem.time_matrix_seconds
         depot = self.problem.nodes[0]
         self.gtr = [depot]
         current = depot
@@ -33,11 +33,10 @@ class Ant:
                     # print(f"pomijamy1")
                     continue
 
-                tau = pheromone[current.id][node.id] ** alpha
-                eta = (1 / time[current.id][node.id]) ** beta
+                probabilities = pheromone_alpha_matrix[current.id, node.id] * eta_matrix[current.id, node.id]
 
                 candidates.append(node)
-                probs.append(tau * eta)
+                probs.append(probabilities)
 
             # 4. AWARIA (Zabezpieczenie z random.choices)
             if not candidates:
