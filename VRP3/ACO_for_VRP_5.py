@@ -20,29 +20,39 @@ init(autoreset=True)
 class ACO_for_VRP_5:
 
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
-                 q_pheromone=1000.0, tau_min=0.01, tau_max=10.0):
+                 patience=1000, patience_small_shake=200, patience_big_shake=500,
+                 intensity_small_shake=0.1, intensity_big_shake=0.3, intensity_elite_ant=0.5,
+                 q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
 
         self.problem = problem
         self.ants = ants
-        self.iterations = iterations
 
-        n = len(problem.nodes)
-        self.pheromone = np.ones((n, n))
+        self.iterations = iterations
+        self.patience = patience
+        self.patience_small_shake = patience_small_shake
+        self.patience_big_shake = patience_big_shake
+
+        self.intensity_small_shake = intensity_small_shake
+        self.intensity_big_shake = intensity_big_shake
+        self.intensity_elite_ant = intensity_elite_ant
 
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
-        self.Q_pheromone = q_pheromone
 
         # ograniczenia feromonu
-        self.tau_max = tau_max
-        self.tau_min = tau_min
+        self.Q_pheromone = q_pheromone  # wzmocnienie feromonu
+        self.tau_max = tau_max  # ograniczenie od góry
+        self.tau_min = tau_min  # ograniczenie od dołu
+
+        n = len(problem.nodes)
+        self.pheromone = np.ones((n, n))
 
         # Konwertujemy listę list na macierz NumPy
         self.time_matrix_seconds = np.array(self.problem.time_matrix_seconds)
 
         # do szybszego odczytu potęg
-        self.eta_matrix = (1.0 / (np.array(self.problem.time_matrix_seconds) + 1e-6)) ** self.beta
+        self.eta_matrix = (1.0 / (self.time_matrix_seconds + 1e-6)) ** self.beta
 
         # Tablice do przechowywania historii (do wykresu)
         self.history_best_overall = []  # Najlepszy koszt
@@ -76,7 +86,7 @@ class ACO_for_VRP_5:
             b = route[i + 1]
 
             # 1. Czas dojazdu
-            current_time_s += time_matrix[a.id][b.id]
+            current_time_s += time_matrix[a.id, b.id]
 
             # 2. Logika okien czasowych i kar - TYLKO dla klientów (b.id != 0)
             if b.id != 0:
@@ -169,7 +179,7 @@ class ACO_for_VRP_5:
         # 3. ELITIST UPDATE - Bonus dla mistrza
         # Najlepsza znaleziona trasa dostaje np. 5-krotnie silniejszy feromon
         if best_gtr_overall is not None:
-            elite_weight = self.ants * 0.5  # Jakby 5 mrówek przeszło tą samą idealną trasą
+            elite_weight = self.ants * self.intensity_elite_ant  # Jakby 5 mrówek przeszło tą samą idealną trasą
             d_tau_elite = (self.Q_pheromone / best_cost) * elite_weight
 
             elite_ids = [node.id for node in best_gtr_overall]
@@ -180,6 +190,24 @@ class ACO_for_VRP_5:
                 self.pheromone[b, a] += d_tau_elite
 
         # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+
+    def shake_pheromones(self, intensity=0.2):
+        """
+        intensity: jak mocno potrząsamy (0.1 = 10%, 0.4 = 40%)
+        """
+        # 1. Dodanie losowego szumu na podstawie intensywności
+        low = 1.0 - intensity
+        high = 1.0 + intensity
+        noise = np.random.uniform(low, high, size=self.pheromone.shape)
+        self.pheromone *= noise
+
+        # 2. Wygładzanie (Pheromone Smoothing)
+        # Przy dużym wzbudzeniu bardziej zbliżamy do tau_max, by wyrównać szanse
+        smoothing_factor = intensity / 2
+        self.pheromone = self.pheromone + smoothing_factor * (self.tau_max - self.pheromone)
+
+        # 3. Pilnowanie granic MMAS
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
     def prepare_greeady_solution(self):
@@ -207,10 +235,14 @@ class ACO_for_VRP_5:
 
         return best_vehicles, best_gtr_overall, best_cost
 
-    def run(self, patience=100):
+    def run(self):
         best_vehicles, best_gtr_overall, best_cost = self.prepare_greeady_solution()
 
         no_improvement_count = 0
+        no_improvement_count_shake = 0
+        no_improvement_count_big_shake = 0
+
+        base_evaporation = self.evaporation
 
         # Tablice do przechowywania historii (do wykresu)
         self.history_best_overall = []  # Najlepszy koszt
@@ -243,6 +275,8 @@ class ACO_for_VRP_5:
                     best_vehicles = vehicles
                     best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
                     no_improvement_count = 0
+                    no_improvement_count_shake = 0
+                    no_improvement_count_big_shake = 0
                     found_better_in_iter = True
                 #### tu zrównoleglić - koniec
 
@@ -258,16 +292,35 @@ class ACO_for_VRP_5:
 
             if not found_better_in_iter:
                 no_improvement_count += 1
+                no_improvement_count_shake += 1
+                no_improvement_count_big_shake += 1
+
+            # Pobudzenie feromonów
+            if no_improvement_count_shake >= self.patience_small_shake:
+                self.shake_pheromones(intensity=self.intensity_small_shake)
+                # self.evaporation *= 1.2
+                no_improvement_count_shake = 0
+
+            # Pobudzenie feromonów
+            if no_improvement_count_big_shake >= self.patience_big_shake:
+                self.shake_pheromones(intensity=self.intensity_big_shake)
+                # self.evaporation *= 1.2
+                no_improvement_count_big_shake = 0
+
+            # if no_improvement_count_shake == 5 or no_improvement_count_big_shake == 5:
+            #     self.evaporation = base_evaporation
 
             # AKTUALIZACJA PASKA POSTĘPU
             pbar.set_postfix({
                 "Best Cost": f"{(best_cost/60):.2f} min",
-                "Stagnation": f"{no_improvement_count}/{patience}"
+                "Stagnation": f"{no_improvement_count}/{self.patience}",
+                "Small Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
+                "Big Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
             })
 
             # Decyzja o przerwaniu
-            if no_improvement_count >= patience:
-                print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
+            if no_improvement_count >= self.patience:
+                print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
                 break
 
         self.problem.vehicles = best_vehicles

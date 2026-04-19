@@ -15,9 +15,9 @@ from VRP3.Gready import greedy_vrp
 from VRP3.Plotter import Plotter
 
 
-VISUALIZE = True
+VISUALIZE = False
 SHOW_PLOT_CONV = False
-DATASET = "Dataset_01"
+DATASET = "Dataset_02"
 
 
 def main():
@@ -25,8 +25,8 @@ def main():
     init(autoreset=True)
 
     #  --- 1. GENERACJA DANYCH ---
-    ants_count = 20
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=20, seed=54)
+    ants_count = 10
+    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=10, seed=54)
     # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
 
     nodes, vehicles = generator.generate()
@@ -85,36 +85,55 @@ def main():
     aco_configs = [
         {
             "name": "ACO 1 (without constraints)",
+            "save_name": "ACO_1",
             "class": ACO_for_VRP_1,
-            "params": {"ants": ants_count, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 200}
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.15,
+                       "patience": 2000, "patience_small_shake": 200, "patience_big_shake": 500,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
             "name": "ACO 2 (seq.)",
+            "save_name": "ACO_2",
             "class": ACO_for_VRP_2,
-            "params": {"ants": ants_count, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 200}
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.15,
+                       "patience": 2000, "patience_small_shake": 200, "patience_big_shake": 500,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
             "name": "ACO 3 (seq. with local search)",
+            "save_name": "ACO_3",
             "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iter": 1000, "alpha": 1, "beta": 2, "evap": 0.05, "patience": 200}
+            "params": {"ants": ants_count, "iterations": 1000, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 200}
         },
         {
             "name": "ACO 4 (seq. with depot)",
+            "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
-            "params": {"ants": ants_count, "iter": 1000, "alpha": 2, "beta": 2, "evap": 0.05, "patience": 200}
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.15,
+                       "patience": 2000, "patience_small_shake": 200, "patience_big_shake": 500,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
             "name": "ACO 5 (seq. with depot & gready)",
+            "save_name": "ACO_5",
             "class": ACO_for_VRP_5,
-            "params": {"ants": ants_count, "iter": 1000, "alpha": 2, "beta": 2, "evap": 0.05, "patience": 800}
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.15,
+                       "patience": 2000, "patience_small_shake": 200, "patience_big_shake": 500,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         }
     ]
 
     # --- PĘTLA TESTUJĄCA ---
     for config in aco_configs:
         name = config["name"]
+        save_name = config["save_name"]
         ACO_Class = config["class"]  # Dynamiczne przypisanie klasy
-        p = config["params"]
+        params = config["params"]
 
         print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
         print(f"{name.upper():^118}")
@@ -123,15 +142,11 @@ def main():
         # Inicjalizacja instancji konkretnej klasy
         aco_instance = ACO_Class(
             problem.copy(),
-            ants=p["ants"],
-            iterations=p["iter"],
-            alpha=p["alpha"],
-            beta=p["beta"],
-            evaporation=p["evap"]
+            **params
         )
 
         # Uruchomienie
-        vehicles, cost, history = aco_instance.run(patience=p["patience"])
+        vehicles, cost, history = aco_instance.run()
 
         # 2. Plotowanie
         plotter.plot_single_aco(
@@ -140,6 +155,7 @@ def main():
             greedy_baseline=greedy_cost,
             save=True,  # Flaga zapisu
             show=SHOW_PLOT_CONV,
+            save_name=save_name,
             dataset=DATASET  # Twoja własna nazwa początkowa
         )
 

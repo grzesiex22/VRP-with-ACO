@@ -20,11 +20,12 @@ init(autoreset=True)
 
 class ACO_for_VRP_3:
 
-    def __init__(self, problem: VRP, ants=50, iterations=100, alpha=1, beta=3, evaporation=0.03):
-
+    def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05, patience=1000,
+                 q_pheromone=100.0, tau_min=0.01, tau_max=5.0):
         self.problem = problem
         self.ants = ants
         self.iterations = iterations
+        self.patience = patience
 
         n = len(problem.nodes)
         self.phr_base_lvl = 0.3
@@ -35,6 +36,11 @@ class ACO_for_VRP_3:
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
+        self.Q_pheromone = q_pheromone
+
+        # ograniczenia feromonu
+        self.tau_max = tau_max
+        self.tau_min = tau_min
 
         # do szybszego odczytu potęg
         self.eta_matrix = (1.0 / (np.array(self.problem.time_matrix_seconds) + 1e-6)) ** self.beta
@@ -239,8 +245,8 @@ class ACO_for_VRP_3:
 
         gtr[p1], gtr[p2] = gtr[p2], gtr[p1]
 
+    def run(self):
 
-    def run(self, patience=100):
         best_vehicles = None
         best_cost = float("inf")
         no_improvement_count = 0
@@ -350,15 +356,15 @@ class ACO_for_VRP_3:
             # AKTUALIZACJA PASKA POSTĘPU
             pbar.set_postfix({
                 "Best Cost": f"{(best_cost/60):.2f} min",
-                "Stagnation": f"{no_improvement_count}/{patience}"
+                "Stagnation": f"{no_improvement_count}/{self.patience}"
             })
 
             # Decyzja o przerwaniu
-            if no_improvement_count >= patience:
+            if no_improvement_count >= self.patience:
                 self.reset_phermones(best_vehicles)
                 # self.intensify_phermones()
                 no_improvement_count = 0
-                # print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
+                # print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
 
         self.problem.vehicles = best_vehicles
 

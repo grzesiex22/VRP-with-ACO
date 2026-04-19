@@ -15,7 +15,7 @@ class Plotter:
 
         plt.ion()
 
-    def plot_single_aco(self, name, history, greedy_baseline=None, save=True, show=True, dataset="Dataset_1"):
+    def plot_single_aco(self, name, history, greedy_baseline=None, save=True, show=True, save_name="ACO_1", dataset="Dataset_1"):
         """
         :param name: Nazwa konfiguracji (np. "ACO 1")
         :param history: Słownik z danymi historycznymi
@@ -77,7 +77,7 @@ class Plotter:
 
             # 2. Budujemy nazwę pliku: [dataset]_[typ]_[algorytm].png
             # typ: 'conv' jako skrót od convergence (zbieżność)
-            clean_aco_name = name.replace(" ", "_").lower()
+            clean_aco_name = save_name.replace(" ", "_")
             filename = f"{dataset.lower()}_conv_{clean_aco_name}.png"
             file_path = os.path.join(dataset_dir, filename)
 
