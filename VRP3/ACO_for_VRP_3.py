@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+
+import numpy as np
 from tqdm import tqdm
 from datetime import timedelta
 from colorama import Fore, Back, Style, init
@@ -33,6 +35,9 @@ class ACO_for_VRP_3:
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
+
+        # do szybszego odczytu potęg
+        self.eta_matrix = (1.0 / (np.array(self.problem.time_matrix_seconds) + 1e-6)) ** self.beta
 
         # Tablice do przechowywania historii (do wykresu)
         self.history_best_overall = []  # Najlepszy koszt
@@ -258,12 +263,13 @@ class ACO_for_VRP_3:
         for i in pbar:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
+
             found_better_in_iter = False
             iter_costs = []
 
             for ant in ants:
                 #### tu zrównoleglić
-                ant.build_route(self.pheromone, self.alpha, self.beta)
+                ant.build_route(self.pheromone, self.alpha, self.eta_matrix)
 
                 for i in range(5):
                     self.local_swap(ant.gtr)
@@ -353,6 +359,8 @@ class ACO_for_VRP_3:
                 # self.intensify_phermones()
                 no_improvement_count = 0
                 # print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
+
+        self.problem.vehicles = best_vehicles
 
         history_data = {
             'overall': self.history_best_overall,

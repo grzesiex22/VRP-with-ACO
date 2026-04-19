@@ -17,7 +17,7 @@ init(autoreset=True)
 class ACO_for_VRP_2:
 
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
-                 tau_min=0.01, tau_max=5.0):
+                 q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
 
         self.problem = problem
         self.ants = ants
@@ -29,6 +29,7 @@ class ACO_for_VRP_2:
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
+        self.Q_pheromone = q_pheromone
 
         # ograniczenia feromonu
         self.tau_max = tau_max
@@ -143,7 +144,7 @@ class ACO_for_VRP_2:
         for ant in ants:
 
             ids = [node.id for node in ant.gtr]
-            d_tau = 1.0 / ant.cost
+            d_tau = self.Q_pheromone / ant.cost
 
             for i in range(len(ids) - 1):
                 a, b = ids[i], ids[i + 1]
@@ -169,7 +170,7 @@ class ACO_for_VRP_2:
         for i in pbar:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
-            pheromone_alpha = self.pheromone ** self.alpha
+            scores_matrix = (self.pheromone ** self.alpha) * self.eta_matrix
 
             found_better_in_iter = False
             iter_costs = []
@@ -177,7 +178,7 @@ class ACO_for_VRP_2:
             for ant in ants:
 
                 #### tu zrównoleglić
-                ant.build_route(pheromone_alpha, self.eta_matrix)
+                ant.build_route(scores_matrix)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
                 ant.cost = cost
@@ -213,6 +214,8 @@ class ACO_for_VRP_2:
             if no_improvement_count >= patience:
                 print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
                 break
+
+        self.problem.vehicles = best_vehicles
 
         history_data = {
             'overall': self.history_best_overall,

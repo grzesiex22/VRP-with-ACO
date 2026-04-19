@@ -14,7 +14,7 @@ class Ant:
 
         self.demands = np.array([n.demand for n in problem.nodes])
 
-    def build_route(self, pheromone_alpha_matrix, eta_matrix):
+    def build_route(self, scores_matrix):
         """
         scores_matrix: Macierz (Pheromone^alpha * Eta^beta) obliczona w klasie ACO
         """
@@ -28,8 +28,6 @@ class Ant:
 
         current_v_idx = 0
         current_free_space = vehicle_capacities[current_v_idx]
-
-        scores_matrix = pheromone_alpha_matrix * eta_matrix
 
         self.gtr = [self.problem.nodes[depot_id]]
         current_id = depot_id

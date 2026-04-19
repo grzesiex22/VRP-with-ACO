@@ -17,7 +17,7 @@ init(autoreset=True)
 class ACO_for_VRP_4:
 
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
-                 tau_min=0.001, tau_max=10.0):
+                 q_pheromone=100.0, tau_min=0.01, tau_max=5.0):
 
         self.problem = problem
         self.ants = ants
@@ -29,6 +29,7 @@ class ACO_for_VRP_4:
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
+        self.Q_pheromone = q_pheromone
 
         # ograniczenia feromonu
         self.tau_max = tau_max
@@ -138,27 +139,57 @@ class ACO_for_VRP_4:
         #     for j in range(n):
         #         self.pheromone[i][j] *= (1 - self.evaporation)
 
-    def update_pheromone(self, ants):
-        # parowanie feromonu
+    # def update_pheromone(self, ants):
+    #     # parowanie feromonu
+    #     self.evaporate()
+    #
+    #     # dodanie nowych feromonów
+    #     for ant in ants:
+    #
+    #         ids = [node.id for node in ant.gtr]
+    #         d_tau = self.Q_pheromone / ant.cost
+    #
+    #         for i in range(len(ids) - 1):
+    #             a, b = ids[i], ids[i + 1]
+    #             self.pheromone[a, b] += d_tau
+    #             self.pheromone[b, a] += d_tau
+    #
+    #     self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+
+    def update_pheromone(self, ants, best_gtr_overall, best_cost):
+        # 1. Parowanie (Evaporation)
         self.evaporate()
-        Q = 10.0  # stała wzmocnienia
 
-        # dodanie nowych feromonów
+        # 2. Aktualizacja od zwykłych mrówek
         for ant in ants:
-
             ids = [node.id for node in ant.gtr]
-            d_tau = Q / ant.cost
+            d_tau = self.Q_pheromone / ant.cost
 
             for i in range(len(ids) - 1):
                 a, b = ids[i], ids[i + 1]
                 self.pheromone[a, b] += d_tau
                 self.pheromone[b, a] += d_tau
 
+        # 3. ELITIST UPDATE - Bonus dla mistrza
+        # Najlepsza znaleziona trasa dostaje np. 5-krotnie silniejszy feromon
+        if best_gtr_overall is not None:
+            elite_weight = 5.0  # Jakby 5 mrówek przeszło tą samą idealną trasą
+            d_tau_elite = (self.Q_pheromone / best_cost) * elite_weight
+
+            elite_ids = [node.id for node in best_gtr_overall]
+            for i in range(len(elite_ids) - 1):
+                a, b = elite_ids[i], elite_ids[i + 1]
+                # Podwójne dodanie (graf nieskierowany)
+                self.pheromone[a, b] += d_tau_elite
+                self.pheromone[b, a] += d_tau_elite
+
+        # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
     def run(self, patience=100):
 
         best_vehicles = None
+        best_gtr_overall = None
         best_cost = float("inf")
         no_improvement_count = 0
 
@@ -173,7 +204,7 @@ class ACO_for_VRP_4:
         for i in pbar:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
-            pheromone_alpha = self.pheromone ** self.alpha
+            scores_matrix = (self.pheromone ** self.alpha) * self.eta_matrix
 
             found_better_in_iter = False
             iter_costs = []
@@ -182,7 +213,7 @@ class ACO_for_VRP_4:
 
                 #### tu zrównoleglić
 
-                ant.build_route(pheromone_alpha, self.eta_matrix)
+                ant.build_route(scores_matrix)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
                 ant.cost = cost  # przyspieszenie
@@ -191,6 +222,7 @@ class ACO_for_VRP_4:
                 if cost < best_cost:
                     best_cost = cost
                     best_vehicles = vehicles
+                    best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
                     no_improvement_count = 0
                     found_better_in_iter = True
                 #### tu zrównoleglić - koniec
@@ -202,7 +234,8 @@ class ACO_for_VRP_4:
             self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
             self.history_best_in_iter.append(min(iter_costs))
 
-            self.update_pheromone(ants)
+            # self.update_pheromone(ants)
+            self.update_pheromone(ants, best_gtr_overall, best_cost)
 
             if not found_better_in_iter:
                 no_improvement_count += 1
@@ -217,6 +250,8 @@ class ACO_for_VRP_4:
             if no_improvement_count >= patience:
                 print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {patience} iteracji. Przerywam w iteracji {i}.")
                 break
+
+        self.problem.vehicles = best_vehicles
 
         history_data = {
             'overall': self.history_best_overall,

@@ -1,10 +1,13 @@
 import sys
 
+import VRP3.VRP
 
-def greedy_vrp(nodes, time_matrix, vehicles):
+
+def greedy_vrp(nodes, problem: VRP3.VRP.VRP):
+
     def get_cost(next_node, vehicle):
         current_node = vehicle.route[-1]
-        travel = time_matrix[current_node.id][next_node.id]
+        travel = problem.time_matrix_seconds[current_node.id][next_node.id]
         arrival = vehicle.duration + travel
 
         # Jeśli wracamy do bazy (id=0), nie liczymy czekania ani kar
@@ -30,7 +33,7 @@ def greedy_vrp(nodes, time_matrix, vehicles):
     unvisited = nodes[1:]
     total_cost = 0
 
-    for vehicle in vehicles:
+    for vehicle in problem.vehicles:
         vehicle.route.append(nodes[0])
 
         while len(unvisited) > 0:
@@ -46,4 +49,4 @@ def greedy_vrp(nodes, time_matrix, vehicles):
         total_cost += vehicle.duration
         vehicle.route.append(nodes[0])
 
-    return vehicles, total_cost
+    return problem, total_cost

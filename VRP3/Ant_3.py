@@ -10,7 +10,7 @@ class Ant:
         self.gtr = []
         self.cost = 0
 
-    def build_route(self, pheromone, alpha, beta):
+    def build_route(self, pheromone, alpha, eta_matrix):
 
         time = self.problem.time_matrix_seconds
         depot = self.problem.nodes[0]
@@ -35,7 +35,7 @@ class Ant:
                     continue
 
                 tau = pheromone[current.id][node.id] ** alpha
-                eta = (1 / time[current.id][node.id]) ** beta
+                eta = eta_matrix[current.id, node.id]
 
                 candidates.append(node)
                 probs.append(tau * eta)

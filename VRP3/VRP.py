@@ -1,3 +1,4 @@
+import copy
 import math
 from datetime import timedelta
 from colorama import Fore, Back, Style, init
@@ -51,6 +52,19 @@ class VRP:
                 matrix[j][i] = seconds
 
         return matrix
+
+    def copy(self):
+        """Tworzy głęboką kopię problemu, resetując stan pojazdów."""
+        # 1. Tworzymy kopię całego obiektu VRP
+        new_vrp = copy.deepcopy(self)
+
+        # 2. Opcjonalnie: Resetujemy trasy w pojazdach nowej kopii,
+        # żeby mrówki zaczynały z "czystą kartą"
+        for vehicle in new_vrp.vehicles:
+            vehicle.route = []  # Zakładam, że Twoja klasa Vehicle ma ten atrybut
+            vehicle.filling = 0
+
+        return new_vrp
 
     def print_summary(self, vehicles):
         """Wyświetla kolorowy, wyrównany harmonogram i statystyki końcowe."""

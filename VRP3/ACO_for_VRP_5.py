@@ -5,19 +5,22 @@ from tqdm import tqdm
 from datetime import timedelta
 from colorama import Fore, Back, Style, init
 
-from VRP3.Ant_1 import Ant
+from VRP3.Ant_5 import Ant
 
 from VRP3.VRP import VRP
 from VRP3.Vehicle import Vehicle
+
+from VRP3.Gready import greedy_vrp
+
 
 # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
 init(autoreset=True)
 
 
-class ACO_for_VRP_1:
+class ACO_for_VRP_5:
 
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
-                 q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
+                 q_pheromone=1000.0, tau_min=0.01, tau_max=10.0):
 
         self.problem = problem
         self.ants = ants
@@ -34,6 +37,9 @@ class ACO_for_VRP_1:
         # ograniczenia feromonu
         self.tau_max = tau_max
         self.tau_min = tau_min
+
+        # Konwertujemy listę list na macierz NumPy
+        self.time_matrix_seconds = np.array(self.problem.time_matrix_seconds)
 
         # do szybszego odczytu potęg
         self.eta_matrix = (1.0 / (np.array(self.problem.time_matrix_seconds) + 1e-6)) ** self.beta
@@ -63,7 +69,7 @@ class ACO_for_VRP_1:
 
     def route_cost(self, route):
         current_time_s = 0.0
-        time_matrix = self.problem.time_matrix_seconds
+        time_matrix = self.time_matrix_seconds
 
         for i in range(len(route) - 1):
             a = route[i]
@@ -127,14 +133,7 @@ class ACO_for_VRP_1:
         return total_time, vehicles
 
     def evaporate(self):
-
         self.pheromone *= (1 - self.evaporation)
-
-        # n = len(self.pheromone)
-        #
-        # for i in range(n):
-        #     for j in range(n):
-        #         self.pheromone[i][j] *= (1 - self.evaporation)
 
     def update_pheromone(self, ants):
         # parowanie feromonu
@@ -153,16 +152,70 @@ class ACO_for_VRP_1:
 
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
-    def run(self, patience=100):
+    def update_pheromone_elite(self, ants, best_gtr_overall, best_cost):
+        # 1. Parowanie (Evaporation)
+        self.evaporate()
 
-        best_vehicles = None
-        best_cost = float("inf")
+        # 2. Aktualizacja od zwykłych mrówek
+        for ant in ants:
+            ids = [node.id for node in ant.gtr]
+            d_tau = self.Q_pheromone / ant.cost
+
+            for i in range(len(ids) - 1):
+                a, b = ids[i], ids[i + 1]
+                self.pheromone[a, b] += d_tau
+                self.pheromone[b, a] += d_tau
+
+        # 3. ELITIST UPDATE - Bonus dla mistrza
+        # Najlepsza znaleziona trasa dostaje np. 5-krotnie silniejszy feromon
+        if best_gtr_overall is not None:
+            elite_weight = self.ants * 0.5  # Jakby 5 mrówek przeszło tą samą idealną trasą
+            d_tau_elite = (self.Q_pheromone / best_cost) * elite_weight
+
+            elite_ids = [node.id for node in best_gtr_overall]
+            for i in range(len(elite_ids) - 1):
+                a, b = elite_ids[i], elite_ids[i + 1]
+                # Podwójne dodanie (graf nieskierowany)
+                self.pheromone[a, b] += d_tau_elite
+                self.pheromone[b, a] += d_tau_elite
+
+        # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+
+    def prepare_greeady_solution(self):
+        # UWAGA: Zakładam, że masz funkcję run_greedy w VRP
+        greedy_problem, greedy_cost = greedy_vrp(self.problem.nodes, self.problem.copy())
+
+        # Traktujemy wynik Greedy jako najlepszy dotychczasowy
+        print("Inicjalizacja gready - czas: " + Fore.YELLOW + f"{greedy_cost / 60} min")
+
+        best_cost = greedy_cost
+        best_vehicles = greedy_problem.vehicles
+
+        # Składamy "surową" trasę GTR z pojazdów Greedy'ego, żeby dać jej feromony
+        greedy_gtr = [self.problem.nodes[0]]  # Zaczynamy w bazie
+        for v in best_vehicles:
+            # Dodajemy klientów z trasy pojazdu (pomijamy zera na początku/końcu, jeśli są dublowane)
+            for node in v.route:
+                if node.id != 0 or greedy_gtr[-1].id != 0:
+                    greedy_gtr.append(node)
+
+        best_gtr_overall = greedy_gtr
+
+        # Dajemy gigantyczny zastrzyk feromonu na trasę Greedy na start!
+        self.update_pheromone_elite([], best_gtr_overall, best_cost)
+
+        return best_vehicles, best_gtr_overall, best_cost
+
+    def run(self, patience=100):
+        best_vehicles, best_gtr_overall, best_cost = self.prepare_greeady_solution()
+
         no_improvement_count = 0
 
         # Tablice do przechowywania historii (do wykresu)
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
-        self.history_avg_in_iter = []  # Średni koszt w danej iteracji
+        self.history_avg_in_iter = []  # Średni koszt w danej iteracj
 
         # Tworzymy pasek postępu
         pbar = tqdm(range(self.iterations), desc="ACO Optimization", unit="it")
@@ -178,16 +231,17 @@ class ACO_for_VRP_1:
             for ant in ants:
 
                 #### tu zrównoleglić
+
                 ant.build_route(scores_matrix)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
-                ant.cost = cost
-
+                ant.cost = cost  # przyspieszenie
                 iter_costs.append(cost)
 
                 if cost < best_cost:
                     best_cost = cost
                     best_vehicles = vehicles
+                    best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
                     no_improvement_count = 0
                     found_better_in_iter = True
                 #### tu zrównoleglić - koniec
@@ -199,7 +253,8 @@ class ACO_for_VRP_1:
             self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
             self.history_best_in_iter.append(min(iter_costs))
 
-            self.update_pheromone(ants)
+            # self.update_pheromone(ants)
+            self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
 
             if not found_better_in_iter:
                 no_improvement_count += 1
@@ -224,4 +279,3 @@ class ACO_for_VRP_1:
         }
 
         return best_vehicles, best_cost, history_data
-

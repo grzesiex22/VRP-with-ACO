@@ -44,18 +44,19 @@ class Generator:
                 s = 0
                 hour1 = 0
                 hour2 = 1
+                p0 = timedelta(minutes=0)
+                p1 = timedelta(minutes=0)
             else:
                 d = random.randint(self.d0, self.d1)
                 total_demand += d
                 s = random.randint(self.s0, self.s1)
                 hour1 = random.randint(self.t0, self.t1)
                 hour2 = random.randint(1, self.t1 - self.t0) + self.t0
+                p0 = timedelta(minutes=20)
+                p1 = timedelta(minutes=30)
 
             t0 = datetime(2000, 1, 1, min(hour1, hour2), 0)  # 22:00
             t1 = datetime(2000, 1, 1, max(hour1, hour2), 0)  # 22:00
-
-            p0 = timedelta(minutes=20)
-            p1 = timedelta(minutes=30)
 
             service = timedelta(minutes=s)
 
