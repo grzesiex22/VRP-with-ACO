@@ -192,6 +192,40 @@ class ACO_for_VRP_5:
         # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
+    def update_pheromone_rank(self, ants, best_gtr_overall, best_cost):
+        # 1. Parowanie (Evaporation)
+        self.evaporate()
+
+        # 2. Sortowanie mrówek od najlepszej (najniższy koszt)
+        sorted_ants = sorted(ants, key=lambda x: x.cost)
+
+        # 3. Parametr rankingu (np. top 6 mrówek zostawia ślad)
+        w = 10
+        for rank, ant in enumerate(sorted_ants[:w]):
+            ids = [node.id for node in ant.gtr]
+            weight = w - rank  # Najlepsza ma wagę 6, druga 5, itd.
+            delta = weight / ant.cost
+            for i in range(len(ids) - 1):
+                a, b = ids[i], ids[i + 1]
+                self.pheromone[a][b] += delta
+                self.pheromone[b][a] += delta
+
+        # 3. ELITIST UPDATE - Bonus dla mistrza
+        # Najlepsza znaleziona trasa dostaje np. 5-krotnie silniejszy feromon
+        if best_gtr_overall is not None:
+            elite_weight = self.ants * self.intensity_elite_ant  # Jakby 5 mrówek przeszło tą samą idealną trasą
+            d_tau_elite = (self.Q_pheromone / best_cost) * elite_weight
+
+            elite_ids = [node.id for node in best_gtr_overall]
+            for i in range(len(elite_ids) - 1):
+                a, b = elite_ids[i], elite_ids[i + 1]
+                # Podwójne dodanie (graf nieskierowany)
+                self.pheromone[a, b] += d_tau_elite
+                self.pheromone[b, a] += d_tau_elite
+
+        # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+
     def shake_pheromones(self, intensity=0.2):
         """
         intensity: jak mocno potrząsamy (0.1 = 10%, 0.4 = 40%)
@@ -261,9 +295,6 @@ class ACO_for_VRP_5:
             iter_costs = []
 
             for ant in ants:
-
-                #### tu zrównoleglić
-
                 ant.build_route(scores_matrix)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
@@ -274,41 +305,56 @@ class ACO_for_VRP_5:
                     best_cost = cost
                     best_vehicles = vehicles
                     best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
-                    no_improvement_count = 0
-                    no_improvement_count_shake = 0
-                    no_improvement_count_big_shake = 0
-                    found_better_in_iter = True
-                #### tu zrównoleglić - koniec
 
-                # można podbijać losowo feromony gdy stagnacja
+                    found_better_in_iter = True
 
             # Zapisujemy historię
             self.history_best_overall.append(best_cost)
             self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
             self.history_best_in_iter.append(min(iter_costs))
 
+            # Aktualizacja feromonów
             # self.update_pheromone(ants)
-            self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
+            # self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
+            # self.update_pheromone_rank(ants, best_gtr_overall, best_cost)
+
+            is_shaking_phase = (0 < no_improvement_count_big_shake < 30)
+
+            if is_shaking_phase:
+                # W fazie wstrząsu nie promujemy starego rekordu! Niech budują nowe ścieżki.
+                self.update_pheromone(ants)
+            else:
+                # W fazie normalnej promujemy elitę
+                self.update_pheromone_rank(ants, best_gtr_overall, best_cost)
 
             if not found_better_in_iter:
                 no_improvement_count += 1
                 no_improvement_count_shake += 1
                 no_improvement_count_big_shake += 1
+            else:
+                no_improvement_count = 0
+                no_improvement_count_shake = 0
+                no_improvement_count_big_shake = 0
+
+                self.evaporation = base_evaporation
 
             # Pobudzenie feromonów
             if no_improvement_count_shake >= self.patience_small_shake:
                 self.shake_pheromones(intensity=self.intensity_small_shake)
-                # self.evaporation *= 1.2
+                self.evaporation *= 1.1
                 no_improvement_count_shake = 0
 
             # Pobudzenie feromonów
             if no_improvement_count_big_shake >= self.patience_big_shake:
                 self.shake_pheromones(intensity=self.intensity_big_shake)
-                # self.evaporation *= 1.2
                 no_improvement_count_big_shake = 0
 
-            # if no_improvement_count_shake == 5 or no_improvement_count_big_shake == 5:
-            #     self.evaporation = base_evaporation
+                self.evaporation *= 1.2
+                self.pheromone *= (1 - self.evaporation * 0.5)
+
+            if no_improvement_count_big_shake == 20 or no_improvement_count_shake == 10:
+                # Po 20 iteracjach od wstrząsu, wracamy do trybu "dopracowywania trasy"
+                self.evaporation = base_evaporation
 
             # AKTUALIZACJA PASKA POSTĘPU
             pbar.set_postfix({
