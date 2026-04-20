@@ -2,7 +2,7 @@
     "metadata": {
         "dataset": "Dataset_40",
         "num_nodes": 40,
-        "num_vehicles": 7
+        "num_vehicles": 6
     },
     "generator_params": {
         "x0": 0,
@@ -643,10 +643,6 @@
         {
             "id": 5,
             "capacity": 700
-        },
-        {
-            "id": 6,
-            "capacity": 500
         }
     ]
 }

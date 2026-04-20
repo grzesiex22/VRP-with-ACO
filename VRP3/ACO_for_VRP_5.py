@@ -303,6 +303,9 @@ class ACO_for_VRP_5:
     def run(self):
         best_vehicles, best_gtr_overall, best_cost = self.prepare_greeady_solution()
 
+        # --- Zmuszenie do śledzenia rekordu samych mrówek bez greedy ---
+        best_cost = float('inf')
+
         no_improvement_count = 0
         no_improvement_count_shake = 0
         no_improvement_count_big_shake = 0
@@ -332,16 +335,15 @@ class ACO_for_VRP_5:
 
             for ant in ants:
                 ant.build_route(scores_matrix)
-
                 cost, vehicles = self.solution_cost(ant.gtr)
                 ant.cost = cost  # przyspieszenie
                 iter_costs.append(cost)
 
-                if cost < best_cost:
+                if cost < best_cost:  # Sprawdzamy rekord globalny
                     best_cost = cost
                     best_vehicles = vehicles
                     used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
-                    best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
+                    best_gtr_overall = ant.gtr.copy()
                     found_better_in_iter = True
 
             # Aktualizacja feromonów
@@ -389,9 +391,9 @@ class ACO_for_VRP_5:
                 "Evap": f"{self.evaporation:.2f}",
                 "Alfa": f"{self.alpha:.1f}",
                 "Beta": f"{self.beta:.1f}",
-                "Stagnation": f"{no_improvement_count}/{self.patience}",
-                "Small Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
-                "Big Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
+                "Stag": f"{no_improvement_count}/{self.patience}",
+                "S_Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
+                "B_Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
             })
 
             # Zapisujemy historię
