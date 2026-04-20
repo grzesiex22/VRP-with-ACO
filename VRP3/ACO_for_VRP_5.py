@@ -18,7 +18,6 @@ class ACO_for_VRP_5:
 
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
                  patience=1000, patience_small_shake=200, patience_big_shake=500,
-                 big_shake_evaporation=0.2, big_shake_duration=20,
                  intensity_small_shake=0.1, intensity_big_shake=0.3, intensity_elite_ant=0.5,
                  q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
 
@@ -30,11 +29,8 @@ class ACO_for_VRP_5:
         self.patience_small_shake = patience_small_shake
         self.patience_big_shake = patience_big_shake
 
-        self.big_shake_evaporation = big_shake_evaporation
-        self.big_shake_duration = big_shake_duration
-        self.intensity_big_shake = intensity_big_shake
-
         self.intensity_small_shake = intensity_small_shake
+        self.intensity_big_shake = intensity_big_shake
         self.intensity_elite_ant = intensity_elite_ant
 
         self.alpha = alpha
@@ -64,7 +60,6 @@ class ACO_for_VRP_5:
         routes = []
         current_route = []
 
-        # 1. Rozbijamy GTR na poszczególne trasy (pomiędzy zerami)
         for node in route:
             current_route.append(node)
             if node.id == 0 and len(current_route) > 1:
@@ -72,26 +67,10 @@ class ACO_for_VRP_5:
                 current_route = [node]  # Zaczynamy nową trasę od bazy
 
         vehicles: list[Vehicle] = []
-        # 2. Przypisujemy trasy do pojazdów (tyle, ile mamy tras)
-        for idx, r in enumerate(routes):
-            if idx < len(self.problem.vehicles):
-                new_v = self.problem.vehicles[idx].__copy__()
-                new_v.route = r
-                # Opcjonalnie przelicz filling, jeśli klasa Vehicle tego nie robi w locie
-                new_v.filling = sum(n.demand for n in r)
-                vehicles.append(new_v)
-
-        # 3. Dodajemy puste pojazdy z floty, które nie zostały użyte
-        num_used = len(vehicles)
-        num_total = len(self.problem.vehicles)
-
-        if num_used < num_total:
-            for i in range(num_used, num_total):
-                empty_v = self.problem.vehicles[i].__copy__()
-                # Pusta trasa to wyjazd i natychmiastowy powrót do bazy
-                empty_v.route = [self.problem.nodes[0], self.problem.nodes[0]]
-                empty_v.filling = 0
-                vehicles.append(empty_v)
+        for idx, route in enumerate(routes):
+            new_v = self.problem.vehicles[idx].__copy__()
+            new_v.route = route
+            vehicles.append(new_v)
 
         return vehicles
 
@@ -287,15 +266,15 @@ class ACO_for_VRP_5:
         greedy_ids = [node.id for node in best_gtr_overall]
         for i in range(len(greedy_ids) - 1):
             a, b = greedy_ids[i], greedy_ids[i + 1]
-            self.pheromone[a, b] = self.tau_max  # Maksymalna atrakcyjność
-            self.pheromone[b, a] = self.tau_max
+            self.pheromone[a, b] = self.tau_max/2  # Maksymalna atrakcyjność
+            self.pheromone[b, a] = self.tau_max/2
 
         return best_vehicles, best_gtr_overall, best_cost
 
     def apply_depot_penalty(self, penalty_factor=0.5):
         # Zakładamy, że depot_index = 0
         # Mnożymy kolumnę 0 przez 0.5 (osłabienie o połowę)
-        self.pheromone[:, 0] *= (1 - penalty_factor)
+        self.pheromone[:, 0] *= penalty_factor
 
         # Opcjonalnie: MMAS clip po zmianie
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
@@ -303,16 +282,9 @@ class ACO_for_VRP_5:
     def run(self):
         best_vehicles, best_gtr_overall, best_cost = self.prepare_greeady_solution()
 
-        # --- Zmuszenie do śledzenia rekordu samych mrówek bez greedy ---
-        best_cost = float('inf')
-
         no_improvement_count = 0
         no_improvement_count_shake = 0
         no_improvement_count_big_shake = 0
-        is_big_shaking_phase = False
-
-        used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
-        vehicles_count = len(best_vehicles)
 
         base_evaporation = self.evaporation
 
@@ -322,38 +294,49 @@ class ACO_for_VRP_5:
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
 
         # Tworzymy pasek postępu
-        pbar = tqdm(range(self.iterations), desc="ACO 5", unit="it")
+        pbar = tqdm(range(self.iterations), desc="ACO Optimization", unit="it")
 
         for i in pbar:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
             scores_matrix = (self.pheromone ** self.alpha) * self.eta_matrix
-            # self.apply_depot_penalty(penalty_factor=0.5)  # Osłabienie feromonów powrotu do depot
+            self.apply_depot_penalty(penalty_factor=0.5)  # Osłabienie feromonów powrotu do depot
 
             found_better_in_iter = False
             iter_costs = []
 
             for ant in ants:
                 ant.build_route(scores_matrix)
+
                 cost, vehicles = self.solution_cost(ant.gtr)
                 ant.cost = cost  # przyspieszenie
                 iter_costs.append(cost)
 
-                if cost < best_cost:  # Sprawdzamy rekord globalny
+                if cost < best_cost:
                     best_cost = cost
                     best_vehicles = vehicles
-                    used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
-                    best_gtr_overall = ant.gtr.copy()
+                    best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
+
                     found_better_in_iter = True
 
+            # Zapisujemy historię
+            self.history_best_overall.append(best_cost)
+            self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
+            self.history_best_in_iter.append(min(iter_costs))
+
             # Aktualizacja feromonów
-            if is_big_shaking_phase:
+            # self.update_pheromone(ants)
+            # self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
+            # self.update_pheromone_rank(ants, best_gtr_overall, best_cost)
+
+            is_shaking_phase = (0 < no_improvement_count_big_shake < 30)
+
+            if is_shaking_phase:
                 # W fazie wstrząsu nie promujemy starego rekordu! Niech budują nowe ścieżki.
                 self.update_pheromone(ants)
             else:
                 # W fazie normalnej promujemy elitę
                 self.update_pheromone_rank(ants, best_gtr_overall, best_cost)
-                # self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
 
             if not found_better_in_iter:
                 no_improvement_count += 1
@@ -364,42 +347,33 @@ class ACO_for_VRP_5:
                 no_improvement_count_shake = 0
                 no_improvement_count_big_shake = 0
 
-            # Pobudzenie feromonów - small shake
+                self.evaporation = base_evaporation
+
+            # Pobudzenie feromonów
             if no_improvement_count_shake >= self.patience_small_shake:
                 self.shake_pheromones(intensity=self.intensity_small_shake)
+                self.evaporation *= 1.1
                 no_improvement_count_shake = 0
 
-            # Pobudzenie feromonów - big shake
+            # Pobudzenie feromonów
             if no_improvement_count_big_shake >= self.patience_big_shake:
                 self.shake_pheromones(intensity=self.intensity_big_shake)
-                is_big_shaking_phase = True
                 no_improvement_count_big_shake = 0
 
-                self.evaporation = min(self.evaporation * 1.3, 0.3)
-                self.pheromone *= (1 - self.big_shake_evaporation)  # odparowanie przy big shake
+                self.evaporation *= 1.2
+                self.pheromone *= (1 - self.evaporation * 0.5)
 
-            # Zakończenie fazy big shake
-            if is_big_shaking_phase and no_improvement_count_big_shake == self.big_shake_duration:
+            if no_improvement_count_big_shake == 20 or no_improvement_count_shake == 10:
                 # Po 20 iteracjach od wstrząsu, wracamy do trybu "dopracowywania trasy"
-                is_big_shaking_phase = False
                 self.evaporation = base_evaporation
 
             # AKTUALIZACJA PASKA POSTĘPU
             pbar.set_postfix({
-                "Best": f"{(best_cost/60):.2f} min",
-                "Veh": f"{used_vehicles_count}/{vehicles_count}",
-                "Evap": f"{self.evaporation:.2f}",
-                "Alfa": f"{self.alpha:.1f}",
-                "Beta": f"{self.beta:.1f}",
-                "Stag": f"{no_improvement_count}/{self.patience}",
-                "S_Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
-                "B_Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
+                "Best Cost": f"{(best_cost/60):.2f} min",
+                "Stagnation": f"{no_improvement_count}/{self.patience}",
+                "Small Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
+                "Big Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
             })
-
-            # Zapisujemy historię
-            self.history_best_overall.append(best_cost)
-            self.history_avg_in_iter.append(sum(iter_costs) / len(iter_costs))
-            self.history_best_in_iter.append(min(iter_costs))
 
             # Decyzja o przerwaniu
             if no_improvement_count >= self.patience:

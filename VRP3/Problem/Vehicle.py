@@ -13,3 +13,17 @@ class Vehicle:
 
     def __repr__(self):
         return f"Vehicle(id={self.id}, capacity={self.capacity})"
+    
+    def to_json(self):
+        route_str = []
+        for r in self.route:
+            route_str.append(f"{r.id}")
+        route_str = "->".join(route_str)
+
+        return {
+            "id": self.id,
+            "route": route_str,
+            "capacity": self.capacity,
+            "filling": self.filling,
+            "duration": self.duration
+        }

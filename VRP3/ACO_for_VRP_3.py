@@ -49,7 +49,6 @@ class ACO_for_VRP_3:
         routes = []
         current_route = []
 
-        # 1. Rozbijamy GTR na poszczególne trasy (pomiędzy zerami)
         for node in route:
             current_route.append(node)
             if node.id == 0 and len(current_route) > 1:
@@ -57,26 +56,10 @@ class ACO_for_VRP_3:
                 current_route = [node]  # Zaczynamy nową trasę od bazy
 
         vehicles: list[Vehicle] = []
-        # 2. Przypisujemy trasy do pojazdów (tyle, ile mamy tras)
-        for idx, r in enumerate(routes):
-            if idx < len(self.problem.vehicles):
-                new_v = self.problem.vehicles[idx].__copy__()
-                new_v.route = r
-                # Opcjonalnie przelicz filling, jeśli klasa Vehicle tego nie robi w locie
-                new_v.filling = sum(n.demand for n in r)
-                vehicles.append(new_v)
-
-        # 3. Dodajemy puste pojazdy z floty, które nie zostały użyte
-        num_used = len(vehicles)
-        num_total = len(self.problem.vehicles)
-
-        if num_used < num_total:
-            for i in range(num_used, num_total):
-                empty_v = self.problem.vehicles[i].__copy__()
-                # Pusta trasa to wyjazd i natychmiastowy powrót do bazy
-                empty_v.route = [self.problem.nodes[0], self.problem.nodes[0]]
-                empty_v.filling = 0
-                vehicles.append(empty_v)
+        for idx, route in enumerate(routes):
+            new_v = self.problem.vehicles[idx].__copy__()
+            new_v.route = route
+            vehicles.append(new_v)
 
         return vehicles
 
@@ -261,11 +244,7 @@ class ACO_for_VRP_3:
 
         best_vehicles = None
         best_cost = float("inf")
-
         no_improvement_count = 0
-
-        used_vehicles_count = 0
-        vehicles_count = len(self.problem.vehicles)
 
         num_best = int(self.ants * 1)
         best_iters = []
@@ -280,7 +259,7 @@ class ACO_for_VRP_3:
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
 
         # Tworzymy pasek postępu
-        pbar = tqdm(range(self.iterations), desc="ACO 3", unit="it")
+        pbar = tqdm(range(self.iterations), desc="ACO Optimization", unit="it")
 
         for i in pbar:
 
@@ -327,7 +306,6 @@ class ACO_for_VRP_3:
                 if cost < best_cost:
                     best_cost = cost
                     best_vehicles = vehicles
-                    used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
                     no_improvement_count = 0
                     found_better_in_iter = True
                 #### tu zrównoleglić - koniec
@@ -372,11 +350,7 @@ class ACO_for_VRP_3:
 
             # AKTUALIZACJA PASKA POSTĘPU
             pbar.set_postfix({
-                "Best": f"{(best_cost/60):.2f} min",
-                "Veh": f"{used_vehicles_count}/{vehicles_count}",
-                "Evap": f"{self.evaporation:.2f}",
-                "Alfa": f"{self.alpha:.1f}",
-                "Beta": f"{self.beta:.1f}",
+                "Best Cost": f"{(best_cost/60):.2f} min",
                 "Stagnation": f"{no_improvement_count}/{self.patience}"
             })
 

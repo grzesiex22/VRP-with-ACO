@@ -1,0 +1,54 @@
+{
+    "cfg": {
+        "name": "ACO 4 (seq. with depot)",
+        "save_name": "ACO_4",
+        "class": "ACO_for_VRP_4",
+        "params": {
+            "ants": 10,
+            "iterations": 10,
+            "alpha": 1,
+            "beta": 2,
+            "evaporation": 0.15,
+            "patience": 1200,
+            "patience_small_shake": 80,
+            "patience_big_shake": 300,
+            "intensity_small_shake": 0.1,
+            "intensity_big_shake": 0.3,
+            "intensity_elite_ant": 0.2,
+            "q_pheromone": 1000.0,
+            "tau_min": 0.01,
+            "tau_max": 10.0
+        }
+    },
+    "cost": 81209.60293299999,
+    "vehicles": [
+        {
+            "id": 0,
+            "route": "0->11->12->14->8->5->9->16->0",
+            "capacity": 300,
+            "filling": 296,
+            "duration": 0
+        },
+        {
+            "id": 1,
+            "route": "0->17->0",
+            "capacity": 300,
+            "filling": 63,
+            "duration": 0
+        },
+        {
+            "id": 2,
+            "route": "0->10->3->22->7->24->23->2->18->0",
+            "capacity": 500,
+            "filling": 475,
+            "duration": 0
+        },
+        {
+            "id": 3,
+            "route": "0->6->21->19->13->4->1->15->20->0",
+            "capacity": 500,
+            "filling": 427,
+            "duration": 0
+        }
+    ]
+}

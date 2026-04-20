@@ -84,3 +84,25 @@ class Visualizer:
         plt.draw()  # Odświeża rysunek
         plt.show(block=False)
         # plt.pause(2)  # Czeka 2 sekundy, pozwalając systemowi narysować okno
+
+    def save(self, routes, title="", fname=None):
+
+        plt.figure(figsize=(8, 8))
+
+        self.draw_nodes()
+        self.draw_routes(routes)
+
+        plt.title(f"{title} - VRP - best routes")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+
+        plt.grid(True)
+        plt.draw()  # Odświeża rysunek
+
+        if fname:
+            plt.savefig(fname)
+            print(f"Wykres {title} zapisano w {fname}")
+        else:
+            print(f"Uwaga! Nie podano ścieżki do zapisania wykresu {title}")
+
+        plt.close()

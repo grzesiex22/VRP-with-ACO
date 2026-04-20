@@ -43,15 +43,13 @@ class Ant:
 
             # DODAJEMY DEPOT JAKO NORMALNEGO KANDYDATA
             # Jeśli jesteśmy u klienta i mamy jeszcze zapasowe auta, baza jest opcją
-            can_return_to_depot = current_id != depot_id and current_v_idx < vehicle_count - 1
-
-            if can_return_to_depot:
+            if current_id != depot_id and current_v_idx < vehicle_count - 1:
                 candidates_ids.append(depot_id)
 
             # Decyzja co robimy:
             if not candidates_ids:
                 # Jeśli nikt się nie mieści, a mamy jeszcze auta -> wracamy do bazy
-                if can_return_to_depot:
+                if current_id != depot_id and current_v_idx < vehicle_count - 1:
                     next_id = depot_id
                 else:
                     # Brak aut lub utknięcie -> dodaj resztę klientów (kara w cost) i wyjdź
@@ -60,22 +58,6 @@ class Ant:
             else:
                 # Pobieramy wagi tylko dla dozwolonych kandydatów
                 weights = scores_matrix[current_id, candidates_ids]
-
-                # --- DYNAMICZNA MASKA ---
-                if can_return_to_depot:
-                    # Szukamy indeksu depotu w aktualnej liście kandydatów
-                    depot_internal_idx = candidates_ids.index(depot_id)
-
-                    # Obliczamy zapełnienie (0.0 - puste, 1.0 - pełne)
-                    fill_ratio = (vehicle_capacities[current_v_idx] - current_free_space) / vehicle_capacities[
-                        current_v_idx]
-
-                    # Maska: Potęgujemy ratio, aby kara była bardzo silna przy pustym aucie
-                    # i zanikała (mnożnik 1.0) przy pełnym aucie.
-                    mask_value = fill_ratio
-
-                    weights[depot_internal_idx] *= mask_value
-                # -----------------------
 
                 # Losowanie
                 next_id = random.choices(candidates_ids, weights=weights)[0]
