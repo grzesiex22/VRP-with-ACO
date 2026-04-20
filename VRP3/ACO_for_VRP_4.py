@@ -238,6 +238,14 @@ class ACO_for_VRP_4:
         # 3. Pilnowanie granic MMAS
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
+    def apply_depot_penalty(self, penalty_factor=0.5):
+        # Zakładamy, że depot_index = 0
+        # Mnożymy kolumnę 0 przez 0.5 (osłabienie o połowę)
+        self.pheromone[:, 0] *= penalty_factor
+
+        # Opcjonalnie: MMAS clip po zmianie
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+
     def run(self):
 
         best_vehicles = None
@@ -264,6 +272,7 @@ class ACO_for_VRP_4:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
             scores_matrix = (self.pheromone ** self.alpha) * self.eta_matrix
+            self.apply_depot_penalty(penalty_factor=0.5)  # Osłabienie feromonów powrotu do depot
 
             found_better_in_iter = False
             iter_costs = []

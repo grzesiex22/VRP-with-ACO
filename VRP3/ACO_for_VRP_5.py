@@ -261,10 +261,23 @@ class ACO_for_VRP_5:
 
         best_gtr_overall = greedy_gtr
 
-        # Dajemy gigantyczny zastrzyk feromonu na trasę Greedy na start!
-        self.update_pheromone_elite([], best_gtr_overall, best_cost)
+        self.pheromone.fill(self.tau_min*2)
+
+        greedy_ids = [node.id for node in best_gtr_overall]
+        for i in range(len(greedy_ids) - 1):
+            a, b = greedy_ids[i], greedy_ids[i + 1]
+            self.pheromone[a, b] = self.tau_max/2  # Maksymalna atrakcyjność
+            self.pheromone[b, a] = self.tau_max/2
 
         return best_vehicles, best_gtr_overall, best_cost
+
+    def apply_depot_penalty(self, penalty_factor=0.5):
+        # Zakładamy, że depot_index = 0
+        # Mnożymy kolumnę 0 przez 0.5 (osłabienie o połowę)
+        self.pheromone[:, 0] *= penalty_factor
+
+        # Opcjonalnie: MMAS clip po zmianie
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
     def run(self):
         best_vehicles, best_gtr_overall, best_cost = self.prepare_greeady_solution()
@@ -287,6 +300,7 @@ class ACO_for_VRP_5:
 
             ants = [Ant(self.problem) for _ in range(self.ants)]
             scores_matrix = (self.pheromone ** self.alpha) * self.eta_matrix
+            self.apply_depot_penalty(penalty_factor=0.5)  # Osłabienie feromonów powrotu do depot
 
             found_better_in_iter = False
             iter_costs = []
