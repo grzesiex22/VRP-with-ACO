@@ -26,8 +26,8 @@ def main():
 
     #  --- 1. GENERACJA DANYCH ---
     params = {
-        "ants_count": 100,
-        "n": 100,
+        "ants_count": 40,
+        "n": 40,
         "d0": 10,
         "d1": 100,
         "t0": 0,
@@ -101,43 +101,43 @@ def main():
     plotter = Plotter()
 
     aco_configs = [
-        # {
-        #     "name": "ACO 1 (without constraints)",
-        #     "save_name": "ACO_1",
-        #     "class": ACO_for_VRP_1,
-        #     "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-        #                "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-        #                "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-        #                "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
-        #                "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        # },
-        # {
-        #     "name": "ACO 2 (seq.)",
-        #     "save_name": "ACO_2",
-        #     "class": ACO_for_VRP_2,
-        #     "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-        #                "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-        #                "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-        #                "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
-        #                "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        # },
-        # {
-        #     "name": "ACO 3 (seq. with local search)",
-        #     "save_name": "ACO_3",
-        #     "class": ACO_for_VRP_3,
-        #     "params": {"ants": ants_count, "iterations": 1000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-        #                "patience": 200}
-        # },
-        # {
-        #     "name": "ACO 4 (seq. with depot)",
-        #     "save_name": "ACO_4",
-        #     "class": ACO_for_VRP_4,
-        #     "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
-        #                "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-        #                "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-        #                "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
-        #                "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        # },
+        {
+            "name": "ACO 1 (without constraints)",
+            "save_name": "ACO_1",
+            "class": ACO_for_VRP_1,
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+        },
+        {
+            "name": "ACO 2 (seq.)",
+            "save_name": "ACO_2",
+            "class": ACO_for_VRP_2,
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+        },
+        {
+            "name": "ACO 3 (seq. with local search)",
+            "save_name": "ACO_3",
+            "class": ACO_for_VRP_3,
+            "params": {"ants": ants_count, "iterations": 1500, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 200}
+        },
+        {
+            "name": "ACO 4 (seq. with depot)",
+            "save_name": "ACO_4",
+            "class": ACO_for_VRP_4,
+            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+        },
         {
             "name": "ACO 5 (seq. with depot & gready)",
             "save_name": "ACO_5",
