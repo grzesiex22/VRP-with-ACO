@@ -69,7 +69,7 @@ class Generator:
         i = 0
         total_capacity = 0
 
-        while total_capacity < 1.3 * total_demand:
+        while total_capacity < 1.5 * total_demand:
             capacity = random.choice([300, 500, 700])
             total_capacity += capacity
 
