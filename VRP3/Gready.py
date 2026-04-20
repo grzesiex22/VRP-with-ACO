@@ -1,9 +1,9 @@
 import sys
 
-import VRP3.VRP
+import VRP3.Problem.VRP
 
 
-def greedy_vrp(nodes, problem: VRP3.VRP.VRP):
+def greedy_vrp(nodes, problem: VRP3.Problem.VRP.VRP):
 
     def get_cost(next_node, vehicle):
         current_node = vehicle.route[-1]

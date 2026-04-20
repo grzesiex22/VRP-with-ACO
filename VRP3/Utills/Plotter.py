@@ -7,7 +7,7 @@ class Plotter:
     def __init__(self, folder_name="Results"):
         # Automatyczne wykrywanie folderu, w którym znajduje się uruchomiony skrypt (main.py)
         # i tworzenie w nim podfolderu 'Results'
-        self.main_path = os.path.dirname(os.path.abspath(__file__))
+        self.main_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.base_dir = os.path.join(self.main_path, folder_name)
 
         if not os.path.exists(self.base_dir):

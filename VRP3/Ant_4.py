@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 
-from VRP3.VRP import VRP
+from VRP3.Problem.VRP import VRP
 
 
 class Ant:

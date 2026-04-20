@@ -1,14 +1,11 @@
-from datetime import datetime, timedelta
-
 import numpy as np
 from tqdm import tqdm
-from datetime import timedelta
-from colorama import Fore, Back, Style, init
+from colorama import Fore, Style, init
 
 from VRP3.Ant_1 import Ant
 
-from VRP3.VRP import VRP
-from VRP3.Vehicle import Vehicle
+from VRP3.Problem.VRP import VRP
+from VRP3.Problem.Vehicle import Vehicle
 
 # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
 init(autoreset=True)

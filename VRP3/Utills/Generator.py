@@ -1,7 +1,7 @@
 import random
-from VRP3.Node import Node
-from datetime import datetime, time, timedelta
-from Vehicle import Vehicle
+from VRP3.Problem.Node import Node
+from datetime import datetime, timedelta
+from VRP3.Problem.Vehicle import Vehicle
 
 
 class Generator:

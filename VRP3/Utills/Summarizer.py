@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import numpy as np
 from colorama import Fore, Back, Style, init
-from VRP3.VRP import VRP
+from VRP3.Problem.VRP import VRP
 # Inicjalizacja colorama (dla pewności, jeśli nie była wywołana wcześniej)
 init(autoreset=True)
 

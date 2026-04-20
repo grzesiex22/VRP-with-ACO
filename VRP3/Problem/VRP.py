@@ -3,8 +3,8 @@ import math
 from datetime import timedelta
 from colorama import Fore, Back, Style, init
 
-from VRP3.Node import Node
-from VRP3.Vehicle import Vehicle
+from VRP3.Problem.Node import Node
+from VRP3.Problem.Vehicle import Vehicle
 
 # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
 init(autoreset=True)

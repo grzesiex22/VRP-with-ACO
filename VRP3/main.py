@@ -1,23 +1,23 @@
-from colorama import Fore, Back, Style, init
+from colorama import Fore, Style, init
 
-from VRP3.Generator import Generator
-from VRP3.VRP import VRP
+from VRP3.Problem.VRP import VRP
 
 from VRP3.ACO_for_VRP_1 import ACO_for_VRP_1
 from VRP3.ACO_for_VRP_2 import ACO_for_VRP_2
 from VRP3.ACO_for_VRP_3 import ACO_for_VRP_3
 from VRP3.ACO_for_VRP_4 import ACO_for_VRP_4
 from VRP3.ACO_for_VRP_5 import ACO_for_VRP_5
-
-from VRP3.Visualizer import Visualizer, plt
-from VRP3.Summarizer import Summarizer
 from VRP3.Gready import greedy_vrp
-from VRP3.Plotter import Plotter
+
+from VRP3.Utills.Generator import Generator
+from VRP3.Utills.Visualizer import Visualizer, plt
+from VRP3.Utills.Summarizer import Summarizer
+from VRP3.Utills.Plotter import Plotter
+from VRP3.Utills.VRP_saver import VRP_saver
 
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
-DATASET = "Dataset_80"
 
 
 def main():
@@ -25,9 +25,21 @@ def main():
     init(autoreset=True)
 
     #  --- 1. GENERACJA DANYCH ---
-    ants_count = 50
-    generator = Generator(d0=10, d1=100, t0=0, t1=5, n=80, seed=54)
-    # generator = Generator(d0=10, d1=100, t0=0, t1=5, n=5, seed=50)
+    params = {
+        "ants_count": 25,
+        "n": 25,
+        "d0": 10,
+        "d1": 100,
+        "t0": 0,
+        "t1": 5,
+        "seed": 54
+    }
+
+    dataset_name = f'Dataset_{params["n"]}'
+
+    ants_count = params["ants_count"]
+    generator = Generator(d0=params["d0"], d1=params["d1"], t0=params["t0"], t1=params["t1"], n=params["n"],
+                          seed=params["seed"])
 
     nodes, vehicles = generator.generate()
 
@@ -51,7 +63,12 @@ def main():
 
     #  --- 2. stworzenie problemu VRP ---
     problem = VRP(nodes, vehicles=vehicles)
-
+    VRP_saver.save_problem(
+        vrp_problem=problem,
+        generator_obj=generator,
+        folder_name="Results",
+        dataset_name=dataset_name
+    )
     results_summary = {}  # Słownik do przechowywania wyników dla tabeli końcowej
 
     # --- 3. ALGORYTM GREEDY (Punkt odniesienia) ---
@@ -157,7 +174,7 @@ def main():
             save=True,  # Flaga zapisu
             show=SHOW_PLOT_CONV,
             save_name=save_name,
-            dataset=DATASET  # Twoja własna nazwa początkowa
+            dataset=dataset_name  # Twoja własna nazwa początkowa
         )
 
         # Podgląd tras w konsoli
