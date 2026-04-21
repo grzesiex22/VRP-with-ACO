@@ -19,6 +19,65 @@ class ACO_for_VRP_1:
                  intensity_small_shake=0.1, intensity_big_shake=0.3,
                  intensity_elite_ant=0.5, ranked_ants_count=(3, 10),
                  q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
+        """
+        Inicjalizuje algorytm optymalizacji mrówkowej (ACO) dla problemu VRP.
+
+        Obiekty:
+        ----------
+        problem : VRP
+            Obiekt przechowujący dane problemu (klienci, pojazdy itp.).
+
+
+        Parametry klasycznego AC0
+        ----------
+        ants : int
+            Liczba mrówek w kolonii generowana w każdej iteracji.
+        iterations : int
+            Maksymalna liczba iteracji algorytmu.
+        alpha : float
+            Wpływ śladu feromonowego. Wyższe wartości oznaczają większe podążanie za historią.
+        beta : float
+            Wpływ widoczności (heurystyki). Wyższe wartości to większa chęć odwiedzania bliższych celów.
+        evaporation : float
+            Współczynnik parowania feromonów (0.0 - 1.0). Wyższa wartość większe parowanie. Zapobiega przedwczesnej zbieżności.
+
+        Parametry stagnacji
+        ----------
+        patience : int
+            Maksymalna liczba iteracji bez poprawy globalnego rekordu przed przerwaniem algorytmu.
+        patience_small_shake : int
+            Liczba iteracji bez poprawy wyzwalająca lekkie przemieszanie feromonów (szum).
+        patience_big_shake : int
+            Liczba iteracji bez poprawy wyzwalająca głęboki reset feromonów i zmianę strategii.
+
+        Parametry fazy wstrząsu
+        ----------
+        big_shake_evaporation : float
+            Dodatkowe, mocniejsze parowanie feromonów w momencie wejścia w fazę Big Shake. Wyższa wartość większe parowanie.
+        big_shake_duration : int
+            Liczba iteracji trwania fazy Big Shake przed powrotem do normalnego trybu.
+        intensity_small_shake : float
+            Siła losowego szumu dodawanego do feromonów przy małym wstrząsie (np. 0.1 = 10%).
+        intensity_big_shake : float
+            Siła losowego szumu dodawanego do feromonów przy dużym wstrząsie (np. 0.1 = 10%).
+
+        Parametry systemu rankingu elit
+        ----------
+        intensity_elite_ant : float
+            Mnożnik wagi dla najlepszego rozwiązania wszech czasów (elity) przy aktualizacji feromonów.
+        ranked_ants_count : tuple (int, int)
+            Krotka (faza_normalna, faza_shake). Określa ile najlepszych mrówek z danej iteracji
+            ma prawo zostawić feromony (np. 3 w normalnej fazie, 10 podczas wstrząsu dla większej eksploracji).
+
+        Ograniczenia MMAS (MAX-MIN Ant System)
+        ----------
+        q_pheromone : float
+            Stała wzmocnienia feromonu (ilość feromonu do podziału na trasę).
+        tau_min : float
+            Minimalny dozwolony poziom feromonów na krawędzi (zapobiega zerowaniu szans).
+        tau_max : float
+            Maksymalny dozwolony poziom feromonów na krawędzi (zapobiega dominacji jednej trasy).
+        """
 
         self.problem = problem
         self.ants = ants
