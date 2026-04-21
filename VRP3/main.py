@@ -119,7 +119,7 @@ def main():
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -130,7 +130,7 @@ def main():
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -148,7 +148,7 @@ def main():
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -159,7 +159,7 @@ def main():
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         }
     ]
