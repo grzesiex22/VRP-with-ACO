@@ -23,6 +23,7 @@ class ACO_for_VRP_3:
         self.patience = patience
 
         n = len(problem.nodes)
+        self.phr_max_lvl = 0.8
         self.phr_base_lvl = 0.3
         self.phr_min_lvl = 0.05
         self.phr_intensifier = 0.1
@@ -154,33 +155,27 @@ class ACO_for_VRP_3:
             for j in range(n):
                 self.pheromone[i][j] *= (1 - self.evaporation)
 
-    def update_pheromone(self, ants):
-        # parowanie feromonu
-        self.evaporate()
+    def update_one(self, gtr):
+        vehicles = self.solution_cost(gtr)[1]
 
-        # dodanie nowych feromonów
-        for ant in ants:
+        for vehicle in vehicles:
+            cost = vehicle.duration
+            route = vehicle.route
 
-            route = ant.gtr
-            cost = ant.cost
-
-            for i in range(len(route) - 1):
+            for i in range(len(vehicle.route) - 1):
                 a = route[i]
                 b = route[i + 1]
 
-                self.pheromone[a.id][b.id] += 1 / cost
-                self.pheromone[b.id][a.id] += 1 / cost
+                self.pheromone[a.id][b.id] += cost / self.eta_matrix[a.id][b.id]
+                self.pheromone[b.id][a.id] += cost / self.eta_matrix[b.id][a.id]
 
-    def update_best_iter(self, gtr):
-        route = gtr
-        cost, _ = self.solution_cost(route)
+                if self.pheromone[a.id][b.id] > self.phr_max_lvl:
+                    self.pheromone[a.id][b.id] = self.phr_max_lvl
+                    self.pheromone[b.id][a.id] = self.phr_max_lvl
 
-        for i in range(len(route) - 1):
-            a = route[i]
-            b = route[i + 1]
-
-            self.pheromone[a.id][b.id] += 1 / cost
-            self.pheromone[b.id][a.id] += 1 / cost
+    def update_pheromone(self, ants):
+        for ant in ants:
+            self.update_one(ant.gtr)
 
     def reset_phermones(self, best_vehicles):
         n = len(self.pheromone)
@@ -260,6 +255,7 @@ class ACO_for_VRP_3:
 
     def run(self):
 
+        best_gtr = []
         best_vehicles = None
         best_cost = float("inf")
 
@@ -294,30 +290,15 @@ class ACO_for_VRP_3:
                 #### tu zrównoleglić
                 ant.build_route(self.pheromone, self.alpha, self.eta_matrix)
 
-                for i in range(5):
-                    self.local_swap(ant.gtr)
-                if random.random() < 0.3:
-                    self.two_opt(ant.gtr, 10)
+                # for i in range(5):
+                #     self.local_swap(ant.gtr)
+                # if random.random() < 0.3:
+                #     self.two_opt(ant.gtr, 10)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
                 ant.cost = cost
 
                 iter_costs.append(cost)
-
-                # ELITSIM
-                # best_iter_costs = [sys.maxsize]
-                # # best iterations (ants) (elitsm)
-                # for b_c in best_iter_costs:
-                #     if cost in best_iter_costs:
-                #         break
-                #     if cost < b_c:
-                #         best_iter_costs.append(b_c)
-                #         best_iters.append(ant.gtr)
-                #     if len(best_iter_costs) > num_best:
-                #         maxi = max(best_iter_costs)
-                #         idx = best_iter_costs.index(maxi)
-                #         best_iters.pop(idx)
-                #         best_iter_costs.pop(idx)
 
                 # BEST IN ITERATION
                 if cost < best_iter_cost:
@@ -327,6 +308,7 @@ class ACO_for_VRP_3:
                 # best globally
                 if cost < best_cost:
                     best_cost = cost
+                    best_gtr = ant.gtr
                     best_vehicles = vehicles
                     used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
                     no_improvement_count = 0
@@ -342,31 +324,8 @@ class ACO_for_VRP_3:
 
             self.evaporate()
 
-            # elitism
-            # for i in range(5):
-            #     self.local_swap(best_iter)
-            # if random.random() < 0.3:
-            #     self.two_opt(best_iter, 10)
-
-            self.update_best_iter(best_iter)
-
-
-            # best_iter_cost = sys.maxsize
-            # for gtr in best_iters:
-            #     for i in range(5):
-            #         self.local_swap(gtr)
-            #     if random.random() < 0.1:
-            #         self.two_opt(gtr, 10)
-                
-            #     cost = self.solution_cost(gtr)[0]
-            #     if cost < best_iter_cost:
-            #         best_iter_cost = cost
-            #         best_iter = gtr
-
-            # self.update_best_iter(best_iter)
-            # best_iters = []
-
-            # self.update_pheromone(best_iters)
+            self.update_one(best_iter)
+            self.update_one(best_gtr)
 
             if not found_better_in_iter:
                 no_improvement_count += 1
@@ -387,6 +346,7 @@ class ACO_for_VRP_3:
                 # self.intensify_phermones()
                 no_improvement_count = 0
                 # print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
+                # break
 
         self.problem.vehicles = best_vehicles
 

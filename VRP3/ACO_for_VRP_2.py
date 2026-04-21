@@ -16,11 +16,13 @@ class ACO_for_VRP_2:
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
                  patience=1000, patience_small_shake=200, patience_big_shake=500,
                  big_shake_evaporation=0.2, big_shake_duration=20,
-                 intensity_small_shake=0.1, intensity_big_shake=0.3, intensity_elite_ant=0.5,
+                 intensity_small_shake=0.1, intensity_big_shake=0.3,
+                 intensity_elite_ant=0.5, ranked_ants_count=(3, 10),
                  q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
 
         self.problem = problem
         self.ants = ants
+        self.ranked_ants_count = ranked_ants_count
 
         self.iterations = iterations
         self.patience = patience
@@ -205,7 +207,7 @@ class ACO_for_VRP_2:
         # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
-    def update_pheromone_rank(self, ants, best_gtr_overall, best_cost):
+    def update_pheromone_rank(self, ants, best_gtr_overall, best_cost, ranked_ants_count=None):
         # 1. Parowanie (Evaporation)
         self.evaporate()
 
@@ -213,11 +215,11 @@ class ACO_for_VRP_2:
         sorted_ants = sorted(ants, key=lambda x: x.cost)
 
         # 3. Parametr rankingu (np. top 6 mrówek zostawia ślad)
-        w = 10
-        for rank, ant in enumerate(sorted_ants[:w]):
+        for rank, ant in enumerate(sorted_ants[:ranked_ants_count]):
             ids = [node.id for node in ant.gtr]
-            weight = w - rank  # Najlepsza ma wagę 6, druga 5, itd.
-            delta = weight / ant.cost
+            weight = ranked_ants_count - rank  # Najlepsza ma wagę 6, druga 5, itd.
+            delta = (self.Q_pheromone / ant.cost) * weight
+
             for i in range(len(ids) - 1):
                 a, b = ids[i], ids[i + 1]
                 self.pheromone[a][b] += delta
@@ -226,7 +228,7 @@ class ACO_for_VRP_2:
         # 3. ELITIST UPDATE - Bonus dla mistrza
         # Najlepsza znaleziona trasa dostaje np. 5-krotnie silniejszy feromon
         if best_gtr_overall is not None:
-            elite_weight = self.ants * self.intensity_elite_ant  # Jakby 5 mrówek przeszło tą samą idealną trasą
+            elite_weight = ranked_ants_count * self.intensity_elite_ant  # zwiększenie wagi dla elitarnego rozwiązania
             d_tau_elite = (self.Q_pheromone / best_cost) * elite_weight
 
             elite_ids = [node.id for node in best_gtr_overall]
@@ -308,11 +310,14 @@ class ACO_for_VRP_2:
             # Aktualizacja feromonów
             if is_big_shaking_phase:
                 # W fazie wstrząsu nie promujemy starego rekordu! Niech budują nowe ścieżki.
-                self.update_pheromone(ants)
+                # self.update_pheromone(ants)
+                self.update_pheromone_rank(ants, best_gtr_overall, best_cost,
+                                           ranked_ants_count=self.ranked_ants_count[1])
             else:
                 # W fazie normalnej promujemy elitę
-                self.update_pheromone_rank(ants, best_gtr_overall, best_cost)
-                # self.update_pheromone_elite(ants, best_gtr_overall, best_cost))
+                self.update_pheromone_rank(ants, best_gtr_overall, best_cost,
+                                           ranked_ants_count=self.ranked_ants_count[0])
+                # self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
 
             if not found_better_in_iter:
                 no_improvement_count += 1

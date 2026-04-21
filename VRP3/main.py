@@ -29,8 +29,8 @@ def main():
 
     #  --- 1. GENERACJA DANYCH ---
     params = {
-        "ants_count": 80,
-        "n": 80,
+        "ants_count": 40,
+        "n": 40,
         "d0": 10,
         "d1": 100,
         "t0": 0,
@@ -66,12 +66,13 @@ def main():
 
     #  --- 2. stworzenie problemu VRP ---
     problem = VRP(nodes, vehicles=vehicles)
-    VRP_saver.save_problem(
-        vrp_problem=problem,
-        generator_obj=generator,
-        folder_name=DIR_NAME,
-        dataset_name=dataset_name
-    )
+    if SAVE:
+        VRP_saver.save_problem(
+            vrp_problem=problem,
+            generator_obj=generator,
+            folder_name=DIR_NAME,
+            dataset_name=dataset_name
+        )
     results_summary = {}  # Słownik do przechowywania wyników dla tabeli końcowej
 
     # --- 3. ALGORYTM GREEDY (Punkt odniesienia) ---
@@ -99,7 +100,7 @@ def main():
     # Wizualizacja tras
     if VISUALIZE or SAVE:
         visualizer = Visualizer(nodes)
-        visualizer.create("Optymalizacja ACO")
+        visualizer.create(title="GREEDY")
         visualizer.add_routes(greedy_vehicles)
         if VISUALIZE:
             visualizer.show(block=False)
@@ -116,8 +117,9 @@ def main():
             "class": ACO_for_VRP_1,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -126,8 +128,9 @@ def main():
             "class": ACO_for_VRP_2,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -143,8 +146,9 @@ def main():
             "class": ACO_for_VRP_4,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -153,8 +157,9 @@ def main():
             "class": ACO_for_VRP_5,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
                        "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
+                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 10),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         }
     ]
@@ -207,7 +212,7 @@ def main():
         # Wizualizacja tras
         if VISUALIZE or SAVE:
             visualizer = Visualizer(nodes)
-            visualizer.create("Optymalizacja ACO")
+            visualizer.create(name)
             visualizer.add_routes(vehicles)
             if VISUALIZE:
                 visualizer.show(block=False)

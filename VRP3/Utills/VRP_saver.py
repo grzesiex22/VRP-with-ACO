@@ -77,7 +77,7 @@ class VRP_saver:
         file_path = VRP_saver.set_path(folder_name, dataset_name, extension="_aco_cfgs.json")
         VRP_saver.save_json(file_path, data_to_serialize)
 
-
+    @staticmethod
     def save_aco(aco_cfg, vehicles, cost,  folder_name="Results",  dataset_name="Dataset_05", extension="_aco_1.json"):
         """
         Zapisuje konfiguracje algorytmu, koszt trasy i trasy pojazdów.
@@ -89,6 +89,28 @@ class VRP_saver:
         cfg["class"] = cfg["class"].__name__
 
         data_to_serialize["cfg"] = cfg
+
+        # koszt trasy
+        data_to_serialize["cost"] = cost
+
+        # pojazdy/trasy
+        vehicles_json = []
+        for i, v in enumerate(vehicles):
+            vehicles_json.append(v.to_json())
+
+        data_to_serialize['vehicles'] = vehicles_json
+
+        # Zapis
+        file_path = VRP_saver.set_path(folder_name, dataset_name, extension=extension)
+        VRP_saver.save_json(file_path, data_to_serialize)
+
+    @staticmethod
+    def save_solution(vehicles, cost,  folder_name="Results",  dataset_name="Dataset_05", extension="_greedy.json"):
+        """
+        Zapisuje koszt trasy i trasy pojazdów.
+        """
+        # konfiguracja
+        data_to_serialize = dict()
 
         # koszt trasy
         data_to_serialize["cost"] = cost

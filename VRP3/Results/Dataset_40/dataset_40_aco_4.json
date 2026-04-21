@@ -1,0 +1,74 @@
+{
+    "cfg": {
+        "name": "ACO 4 (seq. with depot)",
+        "save_name": "ACO_4",
+        "class": "ACO_for_VRP_4",
+        "params": {
+            "ants": 40,
+            "iterations": 10000,
+            "alpha": 1,
+            "beta": 1.5,
+            "evaporation": 0.05,
+            "patience": 1500,
+            "patience_small_shake": 80,
+            "patience_big_shake": 300,
+            "big_shake_evaporation": 0.4,
+            "big_shake_duration": 20,
+            "intensity_small_shake": 0.1,
+            "intensity_big_shake": 0.3,
+            "intensity_elite_ant": 1.5,
+            "ranked_ants_count": [
+                3,
+                10
+            ],
+            "q_pheromone": 1000.0,
+            "tau_min": 0.01,
+            "tau_max": 10.0
+        }
+    },
+    "cost": 78812.203859,
+    "vehicles": [
+        {
+            "id": 0,
+            "route": "0->26->25->27->18->20->30->2->13->19->0",
+            "capacity": 700,
+            "filling": 530,
+            "duration": 11241.509129
+        },
+        {
+            "id": 1,
+            "route": "0->31->4->14->32->0",
+            "capacity": 300,
+            "filling": 291,
+            "duration": 4123.46161
+        },
+        {
+            "id": 2,
+            "route": "0->22->35->23->6->3->21->28->0",
+            "capacity": 500,
+            "filling": 246,
+            "duration": 21102.294841
+        },
+        {
+            "id": 3,
+            "route": "0->5->1->12->33->11->0",
+            "capacity": 300,
+            "filling": 276,
+            "duration": 5692.836781
+        },
+        {
+            "id": 4,
+            "route": "0->16->34->10->9->37->15->17->0",
+            "capacity": 700,
+            "filling": 387,
+            "duration": 15214.026344
+        },
+        {
+            "id": 5,
+            "route": "0->29->39->7->24->38->36->8->0",
+            "capacity": 500,
+            "filling": 368,
+            "duration": 21438.075154
+        }
+    ]
+}

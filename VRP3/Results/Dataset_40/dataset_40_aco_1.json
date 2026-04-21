@@ -1,0 +1,71 @@
+{
+    "cfg": {
+        "name": "ACO 1 (without constraints)",
+        "save_name": "ACO_1",
+        "class": "ACO_for_VRP_1",
+        "params": {
+            "ants": 40,
+            "iterations": 10000,
+            "alpha": 1,
+            "beta": 2,
+            "evaporation": 0.05,
+            "patience": 1500,
+            "patience_small_shake": 80,
+            "patience_big_shake": 300,
+            "big_shake_evaporation": 0.4,
+            "big_shake_duration": 20,
+            "intensity_small_shake": 0.1,
+            "intensity_big_shake": 0.3,
+            "intensity_elite_ant": 1.5,
+            "ranked_ants_count": 3,
+            "q_pheromone": 1000.0,
+            "tau_min": 0.01,
+            "tau_max": 10.0
+        }
+    },
+    "cost": 94730.56858,
+    "vehicles": [
+        {
+            "id": 0,
+            "route": "0->19->13->2->30->4->31->11->16->18->20->0",
+            "capacity": 700,
+            "filling": 606,
+            "duration": 24966.03803
+        },
+        {
+            "id": 1,
+            "route": "0->32->14->35->0",
+            "capacity": 300,
+            "filling": 196,
+            "duration": 5082.627627
+        },
+        {
+            "id": 2,
+            "route": "0->22->0",
+            "capacity": 500,
+            "filling": 42,
+            "duration": 3264.105255
+        },
+        {
+            "id": 3,
+            "route": "0->1->33->34->12->5->0",
+            "capacity": 300,
+            "filling": 294,
+            "duration": 8692.168555
+        },
+        {
+            "id": 4,
+            "route": "0->26->25->27->29->8->39->7->24->38->36->6->3->23->0",
+            "capacity": 700,
+            "filling": 670,
+            "duration": 29147.905093999998
+        },
+        {
+            "id": 5,
+            "route": "0->15->37->9->10->17->28->21->0",
+            "capacity": 500,
+            "filling": 290,
+            "duration": 23577.724018999997
+        }
+    ]
+}
