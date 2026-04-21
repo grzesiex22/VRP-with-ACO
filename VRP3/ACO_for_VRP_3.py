@@ -119,6 +119,7 @@ class ACO_for_VRP_3:
         for vehicle in vehicles:
             # A. Koszt czasu jednej trasy
             r_time_cost = self.route_cost(vehicle.route)
+            vehicle.duration = r_time_cost
 
             # B. Kara za przeładowanie (Capacity)
             vehicle.filling = sum(node.demand for node in vehicle.route)

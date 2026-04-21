@@ -1,0 +1,98 @@
+{
+    "cfg": {
+        "name": "ACO 4 (seq. with depot)",
+        "save_name": "ACO_4",
+        "class": "ACO_for_VRP_4",
+        "params": {
+            "ants": 80,
+            "iterations": 10000,
+            "alpha": 1,
+            "beta": 1.5,
+            "evaporation": 0.05,
+            "patience": 1500,
+            "patience_small_shake": 80,
+            "patience_big_shake": 300,
+            "big_shake_evaporation": 0.2,
+            "big_shake_duration": 20,
+            "intensity_small_shake": 0.1,
+            "intensity_big_shake": 0.3,
+            "intensity_elite_ant": 0.2,
+            "q_pheromone": 1000.0,
+            "tau_min": 0.01,
+            "tau_max": 10.0
+        }
+    },
+    "cost": 193225.58733400004,
+    "vehicles": [
+        {
+            "id": 0,
+            "route": "0->19->0",
+            "capacity": 300,
+            "filling": 63,
+            "duration": 1104.852814
+        },
+        {
+            "id": 1,
+            "route": "0->49->20->13->2->30->0",
+            "capacity": 300,
+            "filling": 296,
+            "duration": 9416.656315
+        },
+        {
+            "id": 2,
+            "route": "0->32->69->16->11->45->4->64->31->53->17->0",
+            "capacity": 700,
+            "filling": 597,
+            "duration": 22830.410747
+        },
+        {
+            "id": 3,
+            "route": "0->48->56->23->3->42->60->47->59->28->21->68->52->40->63->78->15->67->0",
+            "capacity": 700,
+            "filling": 676,
+            "duration": 41877.104909
+        },
+        {
+            "id": 4,
+            "route": "0->22->77->72->44->55->36->7->39->61->74->8->75->62->57->50->43->0",
+            "capacity": 700,
+            "filling": 682,
+            "duration": 39454.381171
+        },
+        {
+            "id": 5,
+            "route": "0->65->9->37->34->10->70->18->79->12->33->5->1->73->0",
+            "capacity": 700,
+            "filling": 700,
+            "duration": 36664.372153
+        },
+        {
+            "id": 6,
+            "route": "0->29->46->41->71->54->6->58->38->24->0",
+            "capacity": 700,
+            "filling": 574,
+            "duration": 23959.243567999998
+        },
+        {
+            "id": 7,
+            "route": "0->26->25->66->27->0",
+            "capacity": 300,
+            "filling": 271,
+            "duration": 5928.447749
+        },
+        {
+            "id": 8,
+            "route": "0->35->14->0",
+            "capacity": 300,
+            "filling": 111,
+            "duration": 3507.217443
+        },
+        {
+            "id": 9,
+            "route": "0->51->76->0",
+            "capacity": 500,
+            "filling": 108,
+            "duration": 8482.900465
+        }
+    ]
+}
