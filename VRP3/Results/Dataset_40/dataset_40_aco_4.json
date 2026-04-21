@@ -9,14 +9,14 @@
             "alpha": 1,
             "beta": 1.5,
             "evaporation": 0.05,
-            "patience": 1500,
-            "patience_small_shake": 80,
-            "patience_big_shake": 300,
+            "patience": 1400,
+            "patience_small_shake": 120,
+            "patience_big_shake": 400,
             "big_shake_evaporation": 0.4,
             "big_shake_duration": 20,
             "intensity_small_shake": 0.1,
-            "intensity_big_shake": 0.3,
-            "intensity_elite_ant": 1.5,
+            "intensity_big_shake": 3.0,
+            "intensity_elite_ant": 2.0,
             "ranked_ants_count": [
                 3,
                 20
@@ -26,49 +26,42 @@
             "tau_max": 10.0
         }
     },
-    "cost": 74966.163973,
+    "cost": 66724.008362,
     "vehicles": [
         {
             "id": 0,
-            "route": "0->19->5->12->33->16->11->30->2->13->0",
-            "capacity": 700,
-            "filling": 524,
-            "duration": 9304.042653
+            "route": "0->17->2->18->13->11->0",
+            "capacity": 500,
+            "filling": 327,
+            "duration": 6083.068548
         },
         {
             "id": 1,
-            "route": "0->22->32->14->4->0",
+            "route": "0->36->20->26->34->16->30->39->0",
             "capacity": 300,
-            "filling": 260,
-            "duration": 7311.20489
+            "filling": 254,
+            "duration": 14779.078668
         },
         {
             "id": 2,
-            "route": "0->35->23->3->6->36->38->24->7->39->8->0",
-            "capacity": 500,
-            "filling": 467,
-            "duration": 24425.390550000004
+            "route": "0->7->24->23->25->8->28->21->37->35->10->6->0",
+            "capacity": 700,
+            "filling": 678,
+            "duration": 23136.368529999996
         },
         {
             "id": 3,
-            "route": "0->18->20->0",
-            "capacity": 300,
-            "filling": 87,
-            "duration": 6346.219777
+            "route": "0->22->3->19->32->27->31->0",
+            "capacity": 700,
+            "filling": 322,
+            "duration": 9859.428455
         },
         {
             "id": 4,
-            "route": "0->26->25->27->29->0",
+            "route": "0->14->33->15->4->1->38->9->5->29->12->0",
             "capacity": 700,
-            "filling": 267,
-            "duration": 6026.784978000001
-        },
-        {
-            "id": 5,
-            "route": "0->31->1->34->10->9->37->15->17->21->28->0",
-            "capacity": 500,
-            "filling": 493,
-            "duration": 21552.521125
+            "filling": 519,
+            "duration": 12866.064161
         }
     ]
 }

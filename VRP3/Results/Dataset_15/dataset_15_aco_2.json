@@ -1,0 +1,53 @@
+{
+    "cfg": {
+        "name": "ACO 2 (seq.)",
+        "save_name": "ACO_2",
+        "class": "ACO_for_VRP_2",
+        "params": {
+            "ants": 10,
+            "iterations": 10000,
+            "alpha": 1,
+            "beta": 2,
+            "evaporation": 0.05,
+            "patience": 1400,
+            "patience_small_shake": 120,
+            "patience_big_shake": 400,
+            "big_shake_evaporation": 0.4,
+            "big_shake_duration": 20,
+            "intensity_small_shake": 0.1,
+            "intensity_big_shake": 3.0,
+            "intensity_elite_ant": 2.0,
+            "ranked_ants_count": [
+                3,
+                20
+            ],
+            "q_pheromone": 1000.0,
+            "tau_min": 0.01,
+            "tau_max": 10.0
+        }
+    },
+    "cost": 37466.229502,
+    "vehicles": [
+        {
+            "id": 0,
+            "route": "0->5->1->12->10->9->8->7->6->3->0",
+            "capacity": 500,
+            "filling": 498,
+            "duration": 24898.927657
+        },
+        {
+            "id": 1,
+            "route": "0->4->14->13->2->0",
+            "capacity": 300,
+            "filling": 296,
+            "duration": 7594.465064
+        },
+        {
+            "id": 2,
+            "route": "0->11->0",
+            "capacity": 300,
+            "filling": 41,
+            "duration": 4972.836781
+        }
+    ]
+}

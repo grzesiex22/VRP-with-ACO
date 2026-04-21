@@ -45,6 +45,8 @@ class ACO_for_VRP_3:
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+        self.history_small_shake = []  # epoki małych wstrząsów
+        self.history_big_shake = []  # epoki dużych wstrząsów
 
     def chop_gtr(self, route):
         routes = []
@@ -275,6 +277,8 @@ class ACO_for_VRP_3:
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+        self.history_small_shake = []  # epoki małych wstrząsów
+        self.history_big_shake = []  # epoki dużych wstrząsów
 
         # Tworzymy pasek postępu
         pbar = tqdm(range(self.iterations), desc="ACO 3", unit="it")
@@ -353,7 +357,9 @@ class ACO_for_VRP_3:
         history_data = {
             'overall': self.history_best_overall,
             'avg': self.history_avg_in_iter,
-            'iter_best': self.history_best_in_iter
+            'iter_best': self.history_best_in_iter,
+            'small_shake': self.history_small_shake,
+            'big_shake': self.history_big_shake
         }
 
         return best_vehicles, best_cost, history_data

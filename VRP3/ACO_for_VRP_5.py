@@ -120,6 +120,8 @@ class ACO_for_VRP_5:
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+        self.history_small_shake = []  # epoki małych wstrząsów
+        self.history_big_shake = []  # epoki dużych wstrząsów
 
     def chop_gtr(self, route):
         routes = []
@@ -382,6 +384,8 @@ class ACO_for_VRP_5:
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+        self.history_small_shake = []  # epoki małych wstrząsów
+        self.history_big_shake = []  # epoki dużych wstrząsów
 
         # Tworzymy pasek postępu
         pbar = tqdm(range(self.iterations), desc="ACO 5", unit="it")
@@ -433,12 +437,15 @@ class ACO_for_VRP_5:
             if no_improvement_count_shake >= self.patience_small_shake:
                 self.shake_pheromones(intensity=self.intensity_small_shake)
                 no_improvement_count_shake = 0
+                self.history_small_shake.append(i)
 
             # Pobudzenie feromonów - big shake
             if no_improvement_count_big_shake >= self.patience_big_shake:
                 self.shake_pheromones(intensity=self.intensity_big_shake)
                 is_big_shaking_phase = True
+                no_improvement_count_shake = 0
                 no_improvement_count_big_shake = 0
+                self.history_big_shake.append(i)
 
                 self.evaporation = min(self.evaporation * 1.3, 0.3)
                 self.pheromone *= (1 - self.big_shake_evaporation)  # odparowanie przy big shake
@@ -476,7 +483,9 @@ class ACO_for_VRP_5:
         history_data = {
             'overall': self.history_best_overall,
             'avg': self.history_avg_in_iter,
-            'iter_best': self.history_best_in_iter
+            'iter_best': self.history_best_in_iter,
+            'small_shake': self.history_small_shake,
+            'big_shake': self.history_big_shake
         }
 
         return best_vehicles, best_cost, history_data

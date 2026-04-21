@@ -31,7 +31,20 @@ class Plotter:
         avg_iter = [c / 60 for c in history['avg']]
         iter_best = [c / 60 for c in history['iter_best']]
 
-        # Rysowanie linii
+        # Listy iteracji, w których wystąpiły shake'i
+        small_shake_history = history.get('small_shake', [])
+        big_shake_history = history.get('big_shake', [])
+
+        # Pionowe linie dla SHAKE (rysujemy najpierw, żeby były pod wykresami)
+        for i, it in enumerate(small_shake_history):
+            plt.axvline(x=it, color='blue', linestyle='--', alpha=0.25, linewidth=0.8,
+                        label='Small Shake' if i == 0 else "")  # Label tylko dla pierwszej linii
+
+        for i, it in enumerate(big_shake_history):
+            plt.axvline(x=it, color='red', linestyle='--', alpha=0.25, linewidth=1.0,
+                        label='Big Shake' if i == 0 else "")  # Label tylko dla pierwszej linii
+
+        # Rysowanie głównych linii
         plt.plot(iterations, best_overall, color='red', linewidth=3, label='Najlepszy wynik (Best Overall)')
         plt.plot(iterations, avg_iter, color='green', alpha=0.7, label='Średni wynik iteracji (Avg Iteration)')
         plt.plot(iterations, iter_best, 'b', alpha=0.7, label='Najlepszy wynik iteracji (Best Iteration)')

@@ -34,7 +34,7 @@ def main():
         "d0": 10,
         "d1": 100,
         "t0": 0,
-        "t1": 2,
+        "t1": 3,
         "seed": 54
     }
 
@@ -116,10 +116,10 @@ def main():
             "save_name": "ACO_1",
             "class": ACO_for_VRP_1,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
+                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -127,10 +127,10 @@ def main():
             "save_name": "ACO_2",
             "class": ACO_for_VRP_2,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
+                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -145,10 +145,10 @@ def main():
             "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
+                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
         {
@@ -156,10 +156,10 @@ def main():
             "save_name": "ACO_5",
             "class": ACO_for_VRP_5,
             "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3,
-                       "intensity_elite_ant": 1.5, "ranked_ants_count": (3, 20),
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
+                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         }
     ]

@@ -1,0 +1,39 @@
+{
+    "cfg": {
+        "name": "ACO 3 (seq. with local search)",
+        "save_name": "ACO_3",
+        "class": "ACO_for_VRP_3",
+        "params": {
+            "ants": 10,
+            "iterations": 1500,
+            "alpha": 1,
+            "beta": 2,
+            "evaporation": 0.05,
+            "patience": 200
+        }
+    },
+    "cost": 38115.825312,
+    "vehicles": [
+        {
+            "id": 0,
+            "route": "0->1->5->12->11->2->14->13->0",
+            "capacity": 500,
+            "filling": 438,
+            "duration": 12624.91011
+        },
+        {
+            "id": 1,
+            "route": "0->4->3->6->7->8->0",
+            "capacity": 300,
+            "filling": 272,
+            "duration": 18900.203724
+        },
+        {
+            "id": 2,
+            "route": "0->10->9->0",
+            "capacity": 300,
+            "filling": 125,
+            "duration": 6590.711478
+        }
+    ]
+}
