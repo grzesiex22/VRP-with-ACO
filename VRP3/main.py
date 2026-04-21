@@ -28,8 +28,8 @@ def main():
 
     #  --- 1. GENERACJA DANYCH ---
     params = {
-        "ants_count": 40,
-        "n": 40,
+        "ants_count": 100,
+        "n": 80,
         "d0": 10,
         "d1": 100,
         "t0": 0,
@@ -132,8 +132,8 @@ def main():
             "name": "ACO 3 (seq. with local search)",
             "save_name": "ACO_3",
             "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iterations": 15, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 200}
+            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 100}
         },
         {
             "name": "ACO 4 (seq. with depot)",
