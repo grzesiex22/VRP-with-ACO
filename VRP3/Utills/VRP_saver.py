@@ -24,9 +24,9 @@ class VRP_saver:
         return file_path
     
     @staticmethod
-    def save_json(file_path, data_to_serialize):
+    def save_json(file_path, data_to_serialize, mode='w'):
         try:
-            with open(file_path, "w", encoding="utf-8") as f:
+            with open(file_path, mode, encoding="utf-8") as f:
                 json.dump(data_to_serialize, f, indent=4, default=str)
             print(f"{Fore.GREEN}[VRP_Saver]{Style.RESET_ALL} Dane zapisane w: {Fore.CYAN}{file_path}")
         except Exception as e:
@@ -102,6 +102,29 @@ class VRP_saver:
         # Zapis
         file_path = VRP_saver.set_path(folder_name, dataset_name, extension=extension)
         VRP_saver.save_json(file_path, data_to_serialize)
+
+    def save_solution(vehicles, cost,  folder_name="Results",  dataset_name="Dataset_05", extension="_greedy.json"):
+        """
+        Zapisuje koszt trasy i trasy pojazdów.
+        """
+        # konfiguracja
+        data_to_serialize = dict()
+
+        # koszt trasy
+        data_to_serialize["cost"] = cost
+
+        # pojazdy/trasy
+        vehicles_json = []
+        for i, v in enumerate(vehicles):
+            vehicles_json.append(v.to_json())
+
+        data_to_serialize['vehicles'] = vehicles_json
+        
+        # Zapis
+        file_path = VRP_saver.set_path(folder_name, dataset_name, extension=extension)
+        VRP_saver.save_json(file_path, data_to_serialize)
+
+    
 
     
 
