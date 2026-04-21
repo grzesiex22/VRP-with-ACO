@@ -22,19 +22,18 @@ SAVE = True
 
 DIR_NAME = "Results"
 
-
 def main():
     # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
     init(autoreset=True)
 
     #  --- 1. GENERACJA DANYCH ---
     params = {
-        "ants_count": 10,
-        "n": 25,
+        "ants_count": 40,
+        "n": 40,
         "d0": 10,
         "d1": 100,
         "t0": 0,
-        "t1": 5,
+        "t1": 2,
         "seed": 54
     }
 
@@ -66,12 +65,13 @@ def main():
 
     #  --- 2. stworzenie problemu VRP ---
     problem = VRP(nodes, vehicles=vehicles)
-    VRP_saver.save_problem(
-        vrp_problem=problem,
-        generator_obj=generator,
-        folder_name=DIR_NAME,
-        dataset_name=dataset_name
-    )
+    if SAVE:
+        VRP_saver.save_problem(
+            vrp_problem=problem,
+            generator_obj=generator,
+            folder_name=DIR_NAME,
+            dataset_name=dataset_name
+        )
     results_summary = {}  # Słownik do przechowywania wyników dla tabeli końcowej
 
     # --- 3. ALGORYTM GREEDY (Punkt odniesienia) ---
@@ -101,6 +101,8 @@ def main():
         visualizer.show(optimal_routes, title="GREEDY")
     if SAVE:
         visualizer.save(optimal_routes, title="GREEDY", fname=VRP_saver.set_path(DIR_NAME, dataset_name, "_greedy.png"))
+        VRP_saver.save_solution(greedy_vehicles, greedy_cost, DIR_NAME, dataset_name, "_greedy.json")
+
 
     # --- 4. ACO ---
     plotter = Plotter()
@@ -110,8 +112,9 @@ def main():
             "name": "ACO 1 (without constraints)",
             "save_name": "ACO_1",
             "class": ACO_for_VRP_1,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.15,
-                       "patience": 1200, "patience_small_shake": 80, "patience_big_shake": 300,
+            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
@@ -119,8 +122,9 @@ def main():
             "name": "ACO 2 (seq.)",
             "save_name": "ACO_2",
             "class": ACO_for_VRP_2,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.15,
-                       "patience": 1200, "patience_small_shake": 80, "patience_big_shake": 300,
+            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
@@ -128,15 +132,16 @@ def main():
             "name": "ACO 3 (seq. with local search)",
             "save_name": "ACO_3",
             "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
+            "params": {"ants": ants_count, "iterations": 15, "alpha": 1, "beta": 2, "evaporation": 0.05,
                        "patience": 200}
         },
         {
             "name": "ACO 4 (seq. with depot)",
             "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.15,
-                       "patience": 1200, "patience_small_shake": 80, "patience_big_shake": 300,
+            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         },
@@ -144,9 +149,10 @@ def main():
             "name": "ACO 5 (seq. with depot & gready)",
             "save_name": "ACO_5",
             "class": ACO_for_VRP_5,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.15,
-                       "patience": 900, "patience_small_shake": 80, "patience_big_shake": 200,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.3,
+            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
+                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
+                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
         }
     ]
@@ -201,15 +207,14 @@ def main():
             visualizer.show([v.route for v in vehicles], title=name)
         if SAVE:
             visualizer.save(optimal_routes, title=name, fname=VRP_saver.set_path(DIR_NAME, dataset_name, f"_{name}.png"))
-
-        VRP_saver.save_aco(
-            aco_cfg=config,
-            vehicles=vehicles,
-            cost=cost,
-            folder_name=DIR_NAME,
-            dataset_name=dataset_name,
-            extension=f"{save_name}.json"
-        )
+            VRP_saver.save_aco(
+                aco_cfg=config,
+                vehicles=vehicles,
+                cost=cost,
+                folder_name=DIR_NAME,
+                dataset_name=dataset_name,
+                extension=f"{save_name}.json"
+            )
 
     # --- 5. FINALNE PORÓWNANIE ZBIORCZE ---
     # Obliczamy minimalny koszt (tylko dla poprawnych rozwiązań 'is_ok')
