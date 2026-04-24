@@ -18,7 +18,8 @@ class ACO_for_VRP_4:
                  big_shake_evaporation=0.2, big_shake_duration=20,
                  intensity_small_shake=0.1, intensity_big_shake=0.3,
                  intensity_elite_ant=0.5, ranked_ants_count=(3, 10),
-                 q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
+                 q_pheromone=10.0, tau_min=0.01, tau_max=5.0,
+                 verbose=True):
         """
         Inicjalizuje algorytm optymalizacji mrówkowej (ACO) dla problemu VRP.
 
@@ -78,6 +79,8 @@ class ACO_for_VRP_4:
         tau_max : float
             Maksymalny dozwolony poziom feromonów na krawędzi (zapobiega dominacji jednej trasy).
         """
+
+        self.verbose = verbose
 
         self.problem = problem
         self.ants = ants
@@ -216,7 +219,8 @@ class ACO_for_VRP_4:
         num_clients = len(self.problem.nodes) - 1
         if len(all_visited_ids) < num_clients:
             missing = num_clients - len(all_visited_ids)
-            print(f"{Fore.RED}{Style.BRIGHT}  UWAGA: Nie odwiedzono wszystkich! Brakuje: {missing} klientów!{Style.RESET_ALL}")
+            if self.verbose:
+                print(f"{Fore.RED}{Style.BRIGHT}  UWAGA: Nie odwiedzono wszystkich! Brakuje: {missing} klientów!{Style.RESET_ALL}")
             total_time += (num_clients - len(all_visited_ids)) * 1000
 
         return total_time, vehicles
@@ -310,10 +314,10 @@ class ACO_for_VRP_4:
         intensity: jak mocno potrząsamy (0.1 = 10%, 0.4 = 40%)
         """
         # 1. Dodanie losowego szumu na podstawie intensywności
-        low = 1.0 - intensity
-        high = 1.0 + intensity
+        low = -intensity
+        high = intensity
         noise = np.random.uniform(low, high, size=self.pheromone.shape)
-        self.pheromone *= noise
+        self.pheromone += noise * self.tau_max
 
         # 2. Wygładzanie (Pheromone Smoothing)
         # Przy dużym wzbudzeniu bardziej zbliżamy do tau_max, by wyrównać szanse
@@ -323,24 +327,71 @@ class ACO_for_VRP_4:
         # 3. Pilnowanie granic MMAS
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
-    def apply_depot_penalty(self, penalty_factor=0.5):
-        # Zakładamy, że depot_index = 0
-        # Mnożymy kolumnę 0 przez 0.5 (osłabienie o połowę)
-        self.pheromone[:, 0] *= (1 - penalty_factor)
+    def calculate_diversity(self, ants_vehicles):
+        """
+        solutions: lista mrówek (self.ants)
+        ant.vehicles: lista pojazdów
+        vehicle.route: lista obiektów typu 'Road/Edge'
+        road: obiekt posiadający węzły (np. road.from_node, road.to_node)
+        """
+        all_edge_sets = []
 
-        # Opcjonalnie: MMAS clip po zmianie
-        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+        for ant_vehicles in ants_vehicles:
+            ant_edges = set()
+            for ant_vehicle in ant_vehicles:
+                # Iterujemy po liście dróg wewnątrz pojazdu
+                route = ant_vehicle.route
+
+                if not route or len(route) < 2:
+                    continue
+
+                # Przechodzimy po węzłach w trasie i tworzymy krawędzie
+                for i in range(len(route) - 1):
+                    u_id = route[i].id
+                    v_id = route[i + 1].id
+
+                    if u_id != v_id:
+                        ant_edges.add(tuple((u_id, v_id)))
+
+            if ant_edges:
+                all_edge_sets.append(ant_edges)
+
+        if not all_edge_sets:
+            return 0.0
+
+        # Całkowita liczba unikalnych krawędzi odkrytych przez całą populację
+        U = len(set().union(*all_edge_sets))
+
+        # Suma wszystkich krawędzi we wszystkich rozwiązaniach
+        total_edges_sum = sum(len(s) for s in all_edge_sets)
+
+        # Średnia liczba krawędzi na mrówkę
+        avg_edges = total_edges_sum / len(all_edge_sets)
+
+        # Mianownik normalizujący: różnica między totalną liczbą krawędzi a średnią
+        denominator = total_edges_sum - avg_edges
+
+        if denominator <= 0:
+            return 0.0
+
+        diversity = (U - avg_edges) / denominator
+
+        return float(max(0.0, min(1.0, diversity)))
 
     def run(self):
 
         best_vehicles = None
         best_gtr_overall = None
         best_cost = float("inf")
+        final_iter = 0
+        best_iter_nr = 0
 
         no_improvement_count = 0
         no_improvement_count_shake = 0
         no_improvement_count_big_shake = 0
         is_big_shaking_phase = False
+        big_shakes_counter = 0
+        big_shakes_iters = []
 
         used_vehicles_count = 0
         vehicles_count = len(self.problem.vehicles)
@@ -357,16 +408,24 @@ class ACO_for_VRP_4:
         self.history_big_shake = []  # epoki dużych wstrząsów
 
         # Tworzymy pasek postępu
-        pbar = tqdm(range(self.iterations), desc="ACO 4", unit="it")
+        # Obsługa paska postępu zależnie od verbose
+        iterator = range(self.iterations)
+        if self.verbose:
+            pbar = tqdm(iterator, desc="ACO 4", unit="it")
+        else:
+            pbar = iterator
 
+        iter_vehicles = []
+
+        # Pętla właściwa
         for i in pbar:
-
             ants = [Ant(self.problem) for _ in range(self.ants)]
             scores_matrix = (self.pheromone ** self.alpha) * self.eta_matrix
             # self.apply_depot_penalty(penalty_factor=0.5)  # Osłabienie feromonów powrotu do depot
 
             found_better_in_iter = False
             iter_costs = []
+            iter_vehicles = []
 
             for ant in ants:
                 ant.build_route(scores_matrix)
@@ -379,9 +438,13 @@ class ACO_for_VRP_4:
                 if cost < best_cost:
                     best_cost = cost
                     best_vehicles = vehicles
-                    used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
                     best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
+                    best_iter_nr = i
+                    used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
                     found_better_in_iter = True
+
+                if no_improvement_count + 1 >= self.patience:
+                    iter_vehicles.append(vehicles)
 
             # Aktualizacja feromonów
             if is_big_shaking_phase:
@@ -405,15 +468,17 @@ class ACO_for_VRP_4:
                 no_improvement_count_big_shake = 0
 
             # Pobudzenie feromonów - small shake
-            if no_improvement_count_shake >= self.patience_small_shake:
+            if no_improvement_count_shake >= self.patience_small_shake and no_improvement_count < self.patience:
                 self.shake_pheromones(intensity=self.intensity_small_shake)
                 no_improvement_count_shake = 0
                 self.history_small_shake.append(i)
 
             # Pobudzenie feromonów - big shake
-            if no_improvement_count_big_shake >= self.patience_big_shake:
+            if no_improvement_count_big_shake >= self.patience_big_shake and no_improvement_count < self.patience:
                 self.shake_pheromones(intensity=self.intensity_big_shake)
                 is_big_shaking_phase = True
+                big_shakes_counter += 1
+                big_shakes_iters.append(i)
                 no_improvement_count_shake = 0
                 no_improvement_count_big_shake = 0
                 self.history_big_shake.append(i)
@@ -421,8 +486,8 @@ class ACO_for_VRP_4:
                 self.evaporation = min(self.evaporation * 1.3, 0.3)
                 self.pheromone *= (1 - self.big_shake_evaporation)  # odparowanie przy big shake
 
-                self.beta = min(self.beta * 1.5, 8)
-                self.alpha = max(self.alpha * 0.8, 0.5)
+                self.beta = 1.0
+                self.alpha = 2.0  # może alfa większe podczas shake
                 self.eta_matrix = (1.0 / (self.time_matrix_seconds + 1e-6)) ** self.beta
 
             # Zakończenie fazy big shake
@@ -435,16 +500,17 @@ class ACO_for_VRP_4:
                 self.eta_matrix = (1.0 / (self.time_matrix_seconds + 1e-6)) ** self.beta
 
             # AKTUALIZACJA PASKA POSTĘPU
-            pbar.set_postfix({
-                "Best": f"{(best_cost/60):.2f} min",
-                "Veh": f"{used_vehicles_count}/{vehicles_count}",
-                "Evap": f"{self.evaporation:.2f}",
-                "Alfa": f"{self.alpha:.1f}",
-                "Beta": f"{self.beta:.1f}",
-                "Stagnation": f"{no_improvement_count}/{self.patience}",
-                "Small Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
-                "Big Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
-            })
+            if self.verbose:
+                pbar.set_postfix({
+                    "Best": f"{(best_cost/60):.2f} min",
+                    "Veh": f"{used_vehicles_count}/{vehicles_count}",
+                    "Evap": f"{self.evaporation:.2f}",
+                    "Alfa": f"{self.alpha:.1f}",
+                    "Beta": f"{self.beta:.1f}",
+                    "Stagnation": f"{no_improvement_count}/{self.patience}",
+                    "Small Shake": f"{no_improvement_count_shake}/{int(self.patience_small_shake)}",
+                    "Big Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
+                })
 
             # Zapisujemy historię
             self.history_best_overall.append(best_cost)
@@ -453,16 +519,26 @@ class ACO_for_VRP_4:
 
             # Decyzja o przerwaniu
             if no_improvement_count >= self.patience:
-                print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
+                final_iter = i
+                if self.verbose:
+                    print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
                 break
 
         self.problem.vehicles = best_vehicles
+
+        diversity_final = self.calculate_diversity(ants_vehicles=iter_vehicles)
 
         history_data = {
             'overall': self.history_best_overall,
             'avg': self.history_avg_in_iter,
             'iter_best': self.history_best_in_iter,
             'small_shake': self.history_small_shake,
-            'big_shake': self.history_big_shake
-        }
+            'big_shake': self.history_big_shake,
+            'iters_done': final_iter,
+            'best_iter_nr': best_iter_nr,
+            'big_shakes_iters': big_shakes_iters,
+            'big_shakes_count': big_shakes_counter,
+            'diversity_final': diversity_final
+            }
+
         return best_vehicles, best_cost, history_data

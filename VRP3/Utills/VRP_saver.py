@@ -10,12 +10,8 @@ class VRP_saver:
 
     @staticmethod
     def set_path(folder_name="Results",  dataset_name="Dataset_05", extension="_problem_def.json"):
-        # 1. DYNAMICZNE USTALANIE ŚCIEŻKI
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        base_dir_results = os.path.join(base_dir, folder_name)
-
         # Budujemy ścieżkę do podfolderu dataset
-        target_dir = os.path.join(base_dir_results, dataset_name)
+        target_dir = VRP_saver.set_folder(folder_name=folder_name, dataset_name=dataset_name)
 
         if not os.path.exists(target_dir):
             os.makedirs(target_dir, exist_ok=True)
@@ -23,6 +19,22 @@ class VRP_saver:
         file_path = os.path.join(target_dir, f"{dataset_name.lower()}_{extension.lower()}")
 
         return file_path
+
+    @staticmethod
+    def set_folder(folder_name="Results", dataset_name="Dataset_05"):
+        # 1. DYNAMICZNE USTALANIE ŚCIEŻKI BAZOWEJ
+        # Zakładamy, że chcemy wyjść dwa poziomy w górę od obecnego pliku
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        # 2. BUDOWANIE ŚCIEŻKI DO TARGETU
+        target_dir = os.path.join(base_dir, folder_name, dataset_name)
+
+        # 3. TWORZENIE FOLDERU (jeśli nie istnieje)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir, exist_ok=True)
+
+        # 4. ZWRACANIE ŚCIEŻKI DO FOLDERU
+        return target_dir
 
     @staticmethod
     def save_json(file_path, data_to_serialize):

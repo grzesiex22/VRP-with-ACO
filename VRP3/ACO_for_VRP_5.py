@@ -313,10 +313,10 @@ class ACO_for_VRP_5:
         intensity: jak mocno potrząsamy (0.1 = 10%, 0.4 = 40%)
         """
         # 1. Dodanie losowego szumu na podstawie intensywności
-        low = 1.0 - intensity
-        high = 1.0 + intensity
+        low = -intensity
+        high = intensity
         noise = np.random.uniform(low, high, size=self.pheromone.shape)
-        self.pheromone *= noise
+        self.pheromone += noise * self.tau_max
 
         # 2. Wygładzanie (Pheromone Smoothing)
         # Przy dużym wzbudzeniu bardziej zbliżamy do tau_max, by wyrównać szanse

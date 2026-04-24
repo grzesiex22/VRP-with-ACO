@@ -14,11 +14,16 @@ from VRP3.Utills.Visualizer import Visualizer, plt
 from VRP3.Utills.Summarizer import Summarizer
 from VRP3.Utills.Plotter import Plotter
 from VRP3.Utills.VRP_saver import VRP_saver
+from VRP3.Utills.ResearchRunner import ResearchRunner
 
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
 SAVE = True
+RESEARCH = True
+SUMMARY_RESEARCH = False
+BEST_PARAMETERS_ACO_3 = False
+BEST_PARAMETERS_ACO_4 = False
 
 DIR_NAME = "Results"
 
@@ -38,7 +43,7 @@ def main():
         "seed": 54
     }
 
-    dataset_name = f'Dataset_{params["n"]}'
+    dataset_name = f'Research_Dataset_{params["n"]}'
 
     ants_count = params["ants_count"]
     generator = Generator(d0=params["d0"], d1=params["d1"], t0=params["t0"], t1=params["t1"], n=params["n"],
@@ -64,7 +69,7 @@ def main():
 
     print(Fore.LIGHTYELLOW_EX + "#" * 118 + Style.RESET_ALL)
 
-    #  --- 2. stworzenie problemu VRP ---
+    #  --- 2. PROBLEM VRP ---
     problem = VRP(nodes, vehicles=vehicles)
     if SAVE:
         VRP_saver.save_problem(
@@ -107,62 +112,112 @@ def main():
         if SAVE:
             visualizer.save(fname=VRP_saver.set_path(DIR_NAME, dataset_name, f"routes_greedy.png"))
 
-    # --- 4. ACO ---
-    plotter = Plotter()
+    # --- 4. BADANIA ---
+    if RESEARCH:
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{'DOBÓR_PARAMETRÓW':^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
 
-    aco_configs = [
-        {
-            "name": "ACO 1 (without constraints)",
-            "save_name": "ACO_1",
-            "class": ACO_for_VRP_1,
-            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
-                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
-                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        },
-        {
-            "name": "ACO 2 (seq.)",
-            "save_name": "ACO_2",
-            "class": ACO_for_VRP_2,
-            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
-                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
-                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        },
-        {
-            "name": "ACO 3 (seq. with local search)",
-            "save_name": "ACO_3",
-            "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iterations": 1500, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 200}
-        },
-        {
+        solver_info_aco_4 = {
             "name": "ACO 4 (seq. with depot)",
             "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
-            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
-                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
-                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
-                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        },
-        {
-            "name": "ACO 5 (seq. with depot & gready)",
-            "save_name": "ACO_5",
-            "class": ACO_for_VRP_5,
-            "params": {"ants": ants_count, "iterations": 10000, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1400, "patience_small_shake": 120, "patience_big_shake": 400,
-                       "big_shake_evaporation": 0.4, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 3.0,
-                       "intensity_elite_ant": 2.0, "ranked_ants_count": (3, 20),
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+            "params": {
+                "ants": ants_count,
+                "iterations": 4000,
+                "alpha": 999999,
+                "beta": 999999,
+                "evaporation": 999999,
+                "patience": 999999,
+                "patience_small_shake": 999999,
+                "patience_big_shake": 999999,
+                "big_shake_evaporation": 0.4,
+                "big_shake_duration": 999999,
+                "intensity_small_shake": 999999,
+                "intensity_big_shake": 999999,
+                "intensity_elite_ant": 0.5,
+                "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
+                "q_pheromone": 1000.0,
+                "tau_min": 0.01,
+                "tau_max": 10.0
+            }
         }
-    ]
+
+        # solver_info_aco_3 = {
+        #     "name": "ACO 3 (COŚ)",
+        #     "save_name": "ACO_3",
+        #     "class": ACO_for_VRP_3,
+        #     "params": {
+        #         "ants": ants_count,
+        #         "iterations": 4000,
+        #         "alpha": 999999,
+        #         "beta": 999999,
+        #         "evaporation": 999999,
+        #         "patience": 999999,
+        #         "patience_small_shake": 999999,
+        #         "patience_big_shake": 999999,
+        #         "big_shake_evaporation": 0.4,
+        #         "big_shake_duration": 999999,
+        #         "intensity_small_shake": 999999,
+        #         "intensity_big_shake": 999999,
+        #         "intensity_elite_ant": 0.5,
+        #         "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
+        #         "q_pheromone": 1000.0,
+        #         "tau_min": 0.01,
+        #         "tau_max": 10.0
+        #     }
+        # }
+
+        research_runner = ResearchRunner(solver_info=solver_info_aco_4,
+                                         file_path=VRP_saver.set_folder(DIR_NAME, dataset_name)
+)
+        best_vehicles, best_cost, history = research_runner.run_experiment(problem=problem.copy(), repeats=10)
+
+        exit(0)
+
+    # --- 5. PODSUMOWANIE BADAŃ - POSZUKIWANIA PARAMETRÓW ---
+    # TU: odczytać, zagregować, policzyć średnie, min, max, i zapisać do kolejnego csv z podsumowaniem badań
+    if SUMMARY_RESEARCH:
+        exit(0)
+
+    # --- 6. ODCZYT NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
+    # TU: wybrać najlepszy zestaw parametrów i zapisać do pliku
+    if SUMMARY_RESEARCH:
+        exit(0)
+
+    # --- 7. ACO - PARAMETRY ---
+    plotter = Plotter()
+
+    aco_configs = []
+
+    if BEST_PARAMETERS_ACO_3:
+        exit()
+    else:
+        aco_configs.append({
+            "name": "ACO 3 (seq. with local search)",
+            "save_name": "ACO_3",
+            "class": ACO_for_VRP_3,
+            "params": {"ants": ants_count, "iterations": 1000, "alpha": 1, "beta": 5, "evaporation": 0.05,
+                       "patience": 200}
+            })
+
+    if BEST_PARAMETERS_ACO_4:
+        exit()
+    else:
+        aco_configs.append({
+            "name": "ACO 4 (seq. with depot)",
+            "save_name": "ACO_4",
+            "class": ACO_for_VRP_4,
+            "params": {"ants": ants_count, "iterations": 5000, "alpha": 1, "beta": 2, "evaporation": 0.08,
+                       "patience": 500, "patience_small_shake": 11190, "patience_big_shake": 111250,
+                       "big_shake_evaporation": 0.4, "big_shake_duration": 50,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.6,
+                       "intensity_elite_ant": 0.5,
+                       "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
+                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+            })
+
+    # --- 8. ACO - POJEDYNCZY TEST ---
 
     # --- PĘTLA TESTUJĄCA ---
     for config in aco_configs:
@@ -228,7 +283,10 @@ def main():
             extension=f"{save_name}.json"
         )
 
-    # --- 5. FINALNE PORÓWNANIE ZBIORCZE ---
+    # --- 9. FINALNE PORÓWNANIE ZBIORCZE ---
+
+    # DO ZMIANY POD TESTY
+
     # Obliczamy minimalny koszt (tylko dla poprawnych rozwiązań 'is_ok')
     valid_costs = [res["cost"] for res in results_summary.values() if res["is_ok"]]
     min_cost = min(valid_costs) if valid_costs else float('inf')
