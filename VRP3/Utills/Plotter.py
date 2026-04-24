@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import os
 from colorama import Fore, Style
 
+from VRP3.Utills.VRP_saver import VRP_saver
+
 
 class Plotter:
     def __init__(self, folder_name="Results"):
@@ -15,13 +17,18 @@ class Plotter:
 
         plt.ion()
 
-    def plot_single_aco(self, name, history, greedy_baseline=None, save=True, show=True, save_name="ACO_1", dataset="Dataset_1"):
+    @staticmethod
+    def plot_single_aco(name, history, folder_name, file_name, subfolder_name=None,
+                        greedy_baseline=None, save=True, show=True):
         """
         :param name: Nazwa konfiguracji (np. "ACO 1")
         :param history: Słownik z danymi historycznymi
+        :param folder_name:
+        :param subfolder_name:
+        :param file_name:
         :param greedy_baseline: Koszt algorytmu Greedy do linii odniesienia
         :param save: Czy zapisać plik na dysku
-        :param dataset: Początek nazwy pliku podany przez użytkownika
+        :param show:
         """
         plt.figure(figsize=(10, 6))
 
@@ -83,16 +90,8 @@ class Plotter:
 
         # --- LOGIKA ZAPISU DO PODFOLDERÓW ---
         if save:
-            # 1. Tworzymy podfolder dla datasetu (np. Results/Dataset_1)
-            dataset_dir = os.path.join(self.base_dir, dataset)
-            if not os.path.exists(dataset_dir):
-                os.makedirs(dataset_dir, exist_ok=True)
-
-            # 2. Budujemy nazwę pliku: [dataset]_[typ]_[algorytm].png
-            # typ: 'conv' jako skrót od convergence (zbieżność)
-            clean_aco_name = save_name.replace(" ", "_")
-            filename = f"{dataset.lower()}_conv_{clean_aco_name}.png"
-            file_path = os.path.join(dataset_dir, filename)
+            file_path = VRP_saver.set_path(folder_name=folder_name, file_name=file_name,
+                                           subfolder_name=subfolder_name)
 
             plt.savefig(file_path)
             print(f"{Fore.CYAN}Wykres zapisany w: {Style.BRIGHT}{file_path}{Style.RESET_ALL}")

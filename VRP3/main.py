@@ -24,6 +24,7 @@ RESEARCH = True
 SUMMARY_RESEARCH = False
 BEST_PARAMETERS_ACO_3 = False
 BEST_PARAMETERS_ACO_4 = False
+TEST = False
 
 DIR_NAME = "Results"
 
@@ -73,10 +74,12 @@ def main():
     problem = VRP(nodes, vehicles=vehicles)
     if SAVE:
         VRP_saver.save_problem(
+            dataset_name=dataset_name,
             vrp_problem=problem,
             generator_obj=generator,
             folder_name=DIR_NAME,
-            dataset_name=dataset_name
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_problem_def.json"
         )
     results_summary = {}  # Słownik do przechowywania wyników dla tabeli końcowej
 
@@ -110,7 +113,8 @@ def main():
         if VISUALIZE:
             visualizer.show(block=False)
         if SAVE:
-            visualizer.save(fname=VRP_saver.set_path(DIR_NAME, dataset_name, f"routes_greedy.png"))
+            visualizer.save(fname=VRP_saver.set_path(DIR_NAME, file_name=f"{dataset_name}_routes_greedy.png",
+                                                     subfolder_name=dataset_name))
 
     # --- 4. BADANIA ---
     if RESEARCH:
@@ -144,7 +148,7 @@ def main():
         }
 
         # solver_info_aco_3 = {
-        #     "name": "ACO 3 (COŚ)",
+        #     "name": "ACO 3 (seq.)",
         #     "save_name": "ACO_3",
         #     "class": ACO_for_VRP_3,
         #     "params": {
@@ -169,9 +173,21 @@ def main():
         # }
 
         research_runner = ResearchRunner(solver_info=solver_info_aco_4,
-                                         file_path=VRP_saver.set_folder(DIR_NAME, dataset_name)
-)
+                                         folder_name=DIR_NAME, subfolder_name=dataset_name)
         best_vehicles, best_cost, history = research_runner.run_experiment(problem=problem.copy(), repeats=10)
+
+        # Plotowanie najlepszego wyniku
+        plotter = Plotter()
+        plotter.plot_single_aco(
+            name=solver_info_aco_4["name"],
+            history=history,
+            greedy_baseline=greedy_cost,
+            save=True,  # Flaga zapisu
+            show=SHOW_PLOT_CONV,
+            folder_name="Results",
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_conv_{solver_info_aco_4['save_name']}",
+        )
 
         exit(0)
 
@@ -194,10 +210,10 @@ def main():
         exit()
     else:
         aco_configs.append({
-            "name": "ACO 3 (seq. with local search)",
+            "name": "ACO 3 (seq.)",
             "save_name": "ACO_3",
             "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iterations": 1000, "alpha": 1, "beta": 5, "evaporation": 0.05,
+            "params": {"ants": ants_count, "iterations": 50, "alpha": 1, "beta": 5, "evaporation": 0.05,
                        "patience": 200}
             })
 
@@ -208,7 +224,7 @@ def main():
             "name": "ACO 4 (seq. with depot)",
             "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
-            "params": {"ants": ants_count, "iterations": 5000, "alpha": 1, "beta": 2, "evaporation": 0.08,
+            "params": {"ants": ants_count, "iterations": 50, "alpha": 1, "beta": 2, "evaporation": 0.08,
                        "patience": 500, "patience_small_shake": 11190, "patience_big_shake": 111250,
                        "big_shake_evaporation": 0.4, "big_shake_duration": 50,
                        "intensity_small_shake": 0.1, "intensity_big_shake": 0.6,
@@ -246,9 +262,12 @@ def main():
             greedy_baseline=greedy_cost,
             save=True,  # Flaga zapisu
             show=SHOW_PLOT_CONV,
-            save_name=save_name,
-            dataset=dataset_name  # Twoja własna nazwa początkowa
+            folder_name=DIR_NAME,
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_conv_{config['save_name']}"
         )
+
+
 
         # Podgląd tras w konsoli
         print(f"\n{name} - Najlepsza trasa:")
@@ -272,15 +291,24 @@ def main():
             if VISUALIZE:
                 visualizer.show(block=False)
             if SAVE:
-                visualizer.save(fname=VRP_saver.set_path(DIR_NAME, dataset_name, f"routes_{save_name}.png"))
+                visualizer.save(fname=VRP_saver.set_path(DIR_NAME, file_name=f"{dataset_name}_routes_{save_name}.png",
+                                                         subfolder_name=dataset_name))
 
         VRP_saver.save_aco(
             aco_cfg=config,
             vehicles=vehicles,
             cost=cost,
             folder_name=DIR_NAME,
-            dataset_name=dataset_name,
-            extension=f"{save_name}.json"
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_{save_name}_results.json",
+            verbose=True
+        )
+        VRP_saver.save_history(
+            history=history,
+            folder_name=DIR_NAME,
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_{save_name}_history.json",
+            verbose=False
         )
 
     # --- 9. FINALNE PORÓWNANIE ZBIORCZE ---

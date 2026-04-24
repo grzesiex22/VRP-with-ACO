@@ -529,7 +529,7 @@ class ACO_for_VRP_4:
         diversity_final = self.calculate_diversity(ants_vehicles=iter_vehicles)
 
         history_data = {
-            'overall': self.history_best_overall,
+            'overall_best': self.history_best_overall,
             'avg': self.history_avg_in_iter,
             'iter_best': self.history_best_in_iter,
             'small_shake': self.history_small_shake,
@@ -541,4 +541,4 @@ class ACO_for_VRP_4:
             'diversity_final': diversity_final
             }
 
-        return best_vehicles, best_cost, history_data
+        return best_vehicles, best_cost, history_data.copy()
