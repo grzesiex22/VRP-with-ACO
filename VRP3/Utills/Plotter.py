@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import os
 from colorama import Fore, Style
 
+from VRP3.Utills.VRP_saver import VRP_saver
+
 
 class Plotter:
     def __init__(self, folder_name="Results"):
@@ -15,13 +17,18 @@ class Plotter:
 
         plt.ion()
 
-    def plot_single_aco(self, name, history, greedy_baseline=None, save=True, show=True, save_name="ACO_1", dataset="Dataset_1"):
+    @staticmethod
+    def plot_single_aco(name, history, folder_name, file_name, subfolder_name=None,
+                        greedy_baseline=None, save=True, show=True):
         """
         :param name: Nazwa konfiguracji (np. "ACO 1")
         :param history: Słownik z danymi historycznymi
+        :param folder_name:
+        :param subfolder_name:
+        :param file_name:
         :param greedy_baseline: Koszt algorytmu Greedy do linii odniesienia
         :param save: Czy zapisać plik na dysku
-        :param dataset: Początek nazwy pliku podany przez użytkownika
+        :param show:
         """
         plt.figure(figsize=(10, 6))
 
@@ -31,7 +38,20 @@ class Plotter:
         avg_iter = [c / 60 for c in history['avg']]
         iter_best = [c / 60 for c in history['iter_best']]
 
-        # Rysowanie linii
+        # Listy iteracji, w których wystąpiły shake'i
+        small_shake_history = history.get('small_shake', [])
+        big_shake_history = history.get('big_shake', [])
+
+        # Pionowe linie dla SHAKE (rysujemy najpierw, żeby były pod wykresami)
+        for i, it in enumerate(small_shake_history):
+            plt.axvline(x=it, color='blue', linestyle='--', alpha=0.25, linewidth=0.8,
+                        label='Small Shake' if i == 0 else "")  # Label tylko dla pierwszej linii
+
+        for i, it in enumerate(big_shake_history):
+            plt.axvline(x=it, color='red', linestyle='--', alpha=0.25, linewidth=1.0,
+                        label='Big Shake' if i == 0 else "")  # Label tylko dla pierwszej linii
+
+        # Rysowanie głównych linii
         plt.plot(iterations, best_overall, color='red', linewidth=3, label='Najlepszy wynik (Best Overall)')
         plt.plot(iterations, avg_iter, color='green', alpha=0.7, label='Średni wynik iteracji (Avg Iteration)')
         plt.plot(iterations, iter_best, 'b', alpha=0.7, label='Najlepszy wynik iteracji (Best Iteration)')
@@ -70,16 +90,8 @@ class Plotter:
 
         # --- LOGIKA ZAPISU DO PODFOLDERÓW ---
         if save:
-            # 1. Tworzymy podfolder dla datasetu (np. Results/Dataset_1)
-            dataset_dir = os.path.join(self.base_dir, dataset)
-            if not os.path.exists(dataset_dir):
-                os.makedirs(dataset_dir, exist_ok=True)
-
-            # 2. Budujemy nazwę pliku: [dataset]_[typ]_[algorytm].png
-            # typ: 'conv' jako skrót od convergence (zbieżność)
-            clean_aco_name = save_name.replace(" ", "_")
-            filename = f"{dataset.lower()}_conv_{clean_aco_name}.png"
-            file_path = os.path.join(dataset_dir, filename)
+            file_path = VRP_saver.set_path(folder_name=folder_name, file_name=file_name,
+                                           subfolder_name=subfolder_name)
 
             plt.savefig(file_path)
             print(f"{Fore.CYAN}Wykres zapisany w: {Style.BRIGHT}{file_path}{Style.RESET_ALL}")

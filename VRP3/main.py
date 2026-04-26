@@ -14,13 +14,20 @@ from VRP3.Utills.Visualizer import Visualizer, plt
 from VRP3.Utills.Summarizer import Summarizer
 from VRP3.Utills.Plotter import Plotter
 from VRP3.Utills.VRP_saver import VRP_saver
+from VRP3.Utills.ResearchRunner import ResearchRunner
 
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
 SAVE = True
+RESEARCH = True
+SUMMARY_RESEARCH = False
+BEST_PARAMETERS_ACO_3 = False
+BEST_PARAMETERS_ACO_4 = False
+TEST = False
 
 DIR_NAME = "Results"
+
 
 def main():
     # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
@@ -28,16 +35,16 @@ def main():
 
     #  --- 1. GENERACJA DANYCH ---
     params = {
-        "ants_count": 100,
-        "n": 80,
+        "ants_count": 40,
+        "n": 40,
         "d0": 10,
         "d1": 100,
         "t0": 0,
-        "t1": 2,
+        "t1": 3,
         "seed": 54
     }
 
-    dataset_name = f'Dataset_{params["n"]}'
+    dataset_name = f'Research_Dataset_{params["n"]}'
 
     ants_count = params["ants_count"]
     generator = Generator(d0=params["d0"], d1=params["d1"], t0=params["t0"], t1=params["t1"], n=params["n"],
@@ -63,14 +70,16 @@ def main():
 
     print(Fore.LIGHTYELLOW_EX + "#" * 118 + Style.RESET_ALL)
 
-    #  --- 2. stworzenie problemu VRP ---
+    #  --- 2. PROBLEM VRP ---
     problem = VRP(nodes, vehicles=vehicles)
     if SAVE:
         VRP_saver.save_problem(
+            dataset_name=dataset_name,
             vrp_problem=problem,
             generator_obj=generator,
             folder_name=DIR_NAME,
-            dataset_name=dataset_name
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_problem_def.json"
         )
     results_summary = {}  # Słownik do przechowywania wyników dla tabeli końcowej
 
@@ -96,66 +105,130 @@ def main():
 
     print(f"\nGREEDY czas trasy:" + Fore.YELLOW + f"{greedy_cost/60} minut" + Style.RESET_ALL)
 
-    visualizer = Visualizer(nodes)
-    if VISUALIZE:
-        visualizer.show(optimal_routes, title="GREEDY")
-    if SAVE:
-        visualizer.save(optimal_routes, title="GREEDY", fname=VRP_saver.set_path(DIR_NAME, dataset_name, "_greedy.png"))
-        VRP_saver.save_solution(greedy_vehicles, greedy_cost, DIR_NAME, dataset_name, "_greedy.json")
+    # Wizualizacja tras
+    if VISUALIZE or SAVE:
+        visualizer = Visualizer(nodes)
+        visualizer.create(title="GREEDY")
+        visualizer.add_routes(greedy_vehicles)
+        if VISUALIZE:
+            visualizer.show(block=False)
+        if SAVE:
+            visualizer.save(fname=VRP_saver.set_path(DIR_NAME, file_name=f"{dataset_name}_routes_greedy.png",
+                                                     subfolder_name=dataset_name))
 
+    # --- 4. BADANIA ---
+    if RESEARCH:
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{'DOBÓR_PARAMETRÓW':^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
 
-    # --- 4. ACO ---
-    plotter = Plotter()
+        # solver_info_aco_4 = {
+        #     "name": "ACO 4 (seq. with depot)",
+        #     "save_name": "ACO_4",
+        #     "class": ACO_for_VRP_4,
+        #     "params": {
+        #         "ants": ants_count,
+        #         "iterations": 4000,
+        #         "alpha": 999999,
+        #         "beta": 999999,
+        #         "evaporation": 999999,
+        #         "patience": 999999,
+        #         "patience_small_shake": 999999,
+        #         "patience_big_shake": 999999,
+        #         "big_shake_evaporation": 0.4,
+        #         "big_shake_duration": 999999,
+        #         "intensity_small_shake": 999999,
+        #         "intensity_big_shake": 999999,
+        #         "intensity_elite_ant": 0.5,
+        #         "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
+        #         "q_pheromone": 1000.0,
+        #         "tau_min": 0.01,
+        #         "tau_max": 10.0
+        #     }
+        # }
 
-    aco_configs = [
-        {
-            "name": "ACO 1 (without constraints)",
-            "save_name": "ACO_1",
-            "class": ACO_for_VRP_1,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        },
-        {
-            "name": "ACO 2 (seq.)",
-            "save_name": "ACO_2",
-            "class": ACO_for_VRP_2,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        },
-        {
-            "name": "ACO 3 (seq. with local search)",
+        solver_info_aco_3 = {
+            "name": "ACO 3 (seq.)",
             "save_name": "ACO_3",
             "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 100}
-        },
-        {
+            "params": {
+                "ants": ants_count,
+                "iterations": 4000,
+                "alpha": 1,
+                "beta": 2,
+                "evaporation": 0.04,
+                "patience": 600,
+                "patience_big_shake": 50,
+                "big_shake_evaporation": 0.4,
+                "big_shake_duration": 10,
+                "intensity_big_shake": 0.03,
+                "tau_min": 0.01,
+                "tau_max": 10.0
+            }
+        }
+
+        research_runner = ResearchRunner(solver_info=solver_info_aco_3,
+                                         folder_name=DIR_NAME, subfolder_name=dataset_name)
+        best_vehicles, best_cost, history = research_runner.run_experiment(problem=problem.copy(), repeats=10)
+
+        # Plotowanie najlepszego wyniku
+        plotter = Plotter()
+        plotter.plot_single_aco(
+            name=solver_info_aco_3["name"],
+            history=history,
+            greedy_baseline=greedy_cost,
+            save=True,  # Flaga zapisu
+            show=SHOW_PLOT_CONV,
+            folder_name="Results",
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_conv_{solver_info_aco_3['save_name']}",
+        )
+
+        exit(0)
+
+    # --- 5. PODSUMOWANIE BADAŃ - POSZUKIWANIA PARAMETRÓW ---
+    # TU: odczytać, zagregować, policzyć średnie, min, max, i zapisać do kolejnego csv z podsumowaniem badań
+    if SUMMARY_RESEARCH:
+        exit(0)
+
+    # --- 6. ODCZYT NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
+    # TU: wybrać najlepszy zestaw parametrów i zapisać do pliku
+    if SUMMARY_RESEARCH:
+        exit(0)
+
+    # --- 7. ACO - PARAMETRY ---
+    plotter = Plotter()
+
+    aco_configs = []
+
+    if BEST_PARAMETERS_ACO_3:
+        exit()
+    else:
+        aco_configs.append({
+            "name": "ACO 3 (seq.)",
+            "save_name": "ACO_3",
+            "class": ACO_for_VRP_3,
+            "params": {"ants": ants_count, "iterations": 50, "alpha": 1, "beta": 5, "evaporation": 0.05,
+                       "patience": 200}
+            })
+
+    if BEST_PARAMETERS_ACO_4:
+        exit()
+    else:
+        aco_configs.append({
             "name": "ACO 4 (seq. with depot)",
             "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 1.5, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
+            "params": {"ants": ants_count, "iterations": 50, "alpha": 1, "beta": 2, "evaporation": 0.08,
+                       "patience": 500, "patience_small_shake": 11190, "patience_big_shake": 111250,
+                       "big_shake_evaporation": 0.4, "big_shake_duration": 50,
+                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.6,
+                       "intensity_elite_ant": 0.5,
+                       "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
                        "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        },
-        {
-            "name": "ACO 5 (seq. with depot & gready)",
-            "save_name": "ACO_5",
-            "class": ACO_for_VRP_5,
-            "params": {"ants": ants_count, "iterations": 10, "alpha": 1, "beta": 2, "evaporation": 0.05,
-                       "patience": 1500, "patience_small_shake": 80, "patience_big_shake": 300,
-                       "big_shake_evaporation": 0.2, "big_shake_duration": 20,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.3, "intensity_elite_ant": 0.2,
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-        }
-    ]
+            })
+
+    # --- 8. ACO - POJEDYNCZY TEST ---
 
     # --- PĘTLA TESTUJĄCA ---
     for config in aco_configs:
@@ -184,9 +257,12 @@ def main():
             greedy_baseline=greedy_cost,
             save=True,  # Flaga zapisu
             show=SHOW_PLOT_CONV,
-            save_name=save_name,
-            dataset=dataset_name  # Twoja własna nazwa początkowa
+            folder_name=DIR_NAME,
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_conv_{config['save_name']}"
         )
+
+
 
         # Podgląd tras w konsoli
         print(f"\n{name} - Najlepsza trasa:")
@@ -202,21 +278,38 @@ def main():
         # Przechowywanie wyników
         results_summary[name] = {"cost": cost, "vehicles": vehicles, "is_ok": is_ok}
 
-        visualizer = Visualizer(nodes)
-        if VISUALIZE:
-            visualizer.show([v.route for v in vehicles], title=name)
-        if SAVE:
-            visualizer.save(optimal_routes, title=name, fname=VRP_saver.set_path(DIR_NAME, dataset_name, f"_{name}.png"))
-            VRP_saver.save_aco(
-                aco_cfg=config,
-                vehicles=vehicles,
-                cost=cost,
-                folder_name=DIR_NAME,
-                dataset_name=dataset_name,
-                extension=f"{save_name}.json"
-            )
+        # Wizualizacja tras
+        if VISUALIZE or SAVE:
+            visualizer = Visualizer(nodes)
+            visualizer.create(name)
+            visualizer.add_routes(vehicles)
+            if VISUALIZE:
+                visualizer.show(block=False)
+            if SAVE:
+                visualizer.save(fname=VRP_saver.set_path(DIR_NAME, file_name=f"{dataset_name}_routes_{save_name}.png",
+                                                         subfolder_name=dataset_name))
 
-    # --- 5. FINALNE PORÓWNANIE ZBIORCZE ---
+        VRP_saver.save_aco(
+            aco_cfg=config,
+            vehicles=vehicles,
+            cost=cost,
+            folder_name=DIR_NAME,
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_{save_name}_results.json",
+            verbose=True
+        )
+        VRP_saver.save_history(
+            history=history,
+            folder_name=DIR_NAME,
+            subfolder_name=dataset_name,
+            file_name=f"{dataset_name}_{save_name}_history.json",
+            verbose=False
+        )
+
+    # --- 9. FINALNE PORÓWNANIE ZBIORCZE ---
+
+    # DO ZMIANY POD TESTY
+
     # Obliczamy minimalny koszt (tylko dla poprawnych rozwiązań 'is_ok')
     valid_costs = [res["cost"] for res in results_summary.values() if res["is_ok"]]
     min_cost = min(valid_costs) if valid_costs else float('inf')
@@ -289,4 +382,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-    plt.show(block=True)
+    if VISUALIZE:
+        plt.show(block=True)

@@ -42,21 +42,33 @@ class Generator:
                 y = self.y0 + (self.y1 - self.y0)/2
                 d = 0
                 s = 0
-                hour1 = 0
-                hour2 = 1
+                start_min = 0
+                end_min = 0
                 p0 = timedelta(minutes=0)
                 p1 = timedelta(minutes=0)
             else:
                 d = random.randint(self.d0, self.d1)
                 total_demand += d
                 s = random.randint(self.s0, self.s1)
-                hour1 = random.randint(self.t0, self.t1)
-                hour2 = random.randint(1, self.t1 - self.t0) + self.t0
+
+                # Losujemy dwa dowolne punkty w czasie (godziny i minuty)
+                m0 = random.randint(self.t0 * 60, self.t1 * 60)
+                m1 = random.randint(self.t0 * 60, self.t1 * 60)
+
+                # 2. Jeśli wylosowano to samo, wymuszamy różnicę (np. +15 minut)
+                if m0 == m1:
+                    m1 += 15
+
+                    # 3. Rozdzielamy na czas otwarcia i zamknięcia
+                start_min = min(m0, m1)
+                end_min = max(m0, m1)
+
                 p0 = timedelta(minutes=20)
                 p1 = timedelta(minutes=30)
 
-            t0 = datetime(2000, 1, 1, min(hour1, hour2), 0)  # 22:00
-            t1 = datetime(2000, 1, 1, max(hour1, hour2), 0)  # 22:00
+            # 4. Tworzymy obiekty datetime
+            t0 = datetime(2000, 1, 1, 0, 0) + timedelta(minutes=start_min)
+            t1 = datetime(2000, 1, 1, 0, 0) + timedelta(minutes=end_min)
 
             service = timedelta(minutes=s)
 
@@ -69,7 +81,7 @@ class Generator:
         i = 0
         total_capacity = 0
 
-        while total_capacity < 1.3 * total_demand:
+        while total_capacity < 1.2 * total_demand:
             capacity = random.choice([300, 500, 700])
             total_capacity += capacity
 

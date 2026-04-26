@@ -19,11 +19,72 @@ class ACO_for_VRP_5:
     def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
                  patience=1000, patience_small_shake=200, patience_big_shake=500,
                  big_shake_evaporation=0.2, big_shake_duration=20,
-                 intensity_small_shake=0.1, intensity_big_shake=0.3, intensity_elite_ant=0.5,
+                 intensity_small_shake=0.1, intensity_big_shake=0.3,
+                 intensity_elite_ant=0.5, ranked_ants_count=(3, 10),
                  q_pheromone=10.0, tau_min=0.01, tau_max=5.0):
+        """
+        Inicjalizuje algorytm optymalizacji mrówkowej (ACO) dla problemu VRP.
+
+        Obiekty:
+        ----------
+        problem : VRP
+            Obiekt przechowujący dane problemu (klienci, pojazdy itp.).
+
+
+        Parametry klasycznego AC0
+        ----------
+        ants : int
+            Liczba mrówek w kolonii generowana w każdej iteracji.
+        iterations : int
+            Maksymalna liczba iteracji algorytmu.
+        alpha : float
+            Wpływ śladu feromonowego. Wyższe wartości oznaczają większe podążanie za historią.
+        beta : float
+            Wpływ widoczności (heurystyki). Wyższe wartości to większa chęć odwiedzania bliższych celów.
+        evaporation : float
+            Współczynnik parowania feromonów (0.0 - 1.0). Wyższa wartość większe parowanie. Zapobiega przedwczesnej zbieżności.
+
+        Parametry stagnacji
+        ----------
+        patience : int
+            Maksymalna liczba iteracji bez poprawy globalnego rekordu przed przerwaniem algorytmu.
+        patience_small_shake : int
+            Liczba iteracji bez poprawy wyzwalająca lekkie przemieszanie feromonów (szum).
+        patience_big_shake : int
+            Liczba iteracji bez poprawy wyzwalająca głęboki reset feromonów i zmianę strategii.
+
+        Parametry fazy wstrząsu
+        ----------
+        big_shake_evaporation : float
+            Dodatkowe, mocniejsze parowanie feromonów w momencie wejścia w fazę Big Shake. Wyższa wartość większe parowanie.
+        big_shake_duration : int
+            Liczba iteracji trwania fazy Big Shake przed powrotem do normalnego trybu.
+        intensity_small_shake : float
+            Siła losowego szumu dodawanego do feromonów przy małym wstrząsie (np. 0.1 = 10%).
+        intensity_big_shake : float
+            Siła losowego szumu dodawanego do feromonów przy dużym wstrząsie (np. 0.1 = 10%).
+
+        Parametry systemu rankingu elit
+        ----------
+        intensity_elite_ant : float
+            Mnożnik wagi dla najlepszego rozwiązania wszech czasów (elity) przy aktualizacji feromonów.
+        ranked_ants_count : tuple (int, int)
+            Krotka (faza_normalna, faza_shake). Określa ile najlepszych mrówek z danej iteracji
+            ma prawo zostawić feromony (np. 3 w normalnej fazie, 10 podczas wstrząsu dla większej eksploracji).
+
+        Ograniczenia MMAS (MAX-MIN Ant System)
+        ----------
+        q_pheromone : float
+            Stała wzmocnienia feromonu (ilość feromonu do podziału na trasę).
+        tau_min : float
+            Minimalny dozwolony poziom feromonów na krawędzi (zapobiega zerowaniu szans).
+        tau_max : float
+            Maksymalny dozwolony poziom feromonów na krawędzi (zapobiega dominacji jednej trasy).
+        """
 
         self.problem = problem
         self.ants = ants
+        self.ranked_ants_count = ranked_ants_count
 
         self.iterations = iterations
         self.patience = patience
@@ -59,6 +120,8 @@ class ACO_for_VRP_5:
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+        self.history_small_shake = []  # epoki małych wstrząsów
+        self.history_big_shake = []  # epoki dużych wstrząsów
 
     def chop_gtr(self, route):
         routes = []
@@ -134,6 +197,7 @@ class ACO_for_VRP_5:
         for vehicle in vehicles:
             # A. Koszt czasu jednej trasy
             r_time_cost = self.route_cost(vehicle.route)
+            vehicle.duration = r_time_cost
 
             # B. Kara za przeładowanie (Capacity)
             vehicle.filling = sum(node.demand for node in vehicle.route)
@@ -210,7 +274,7 @@ class ACO_for_VRP_5:
         # 4. Limitowanie MAX/MIN (BEZ TEGO FEROMONY WYBUCHNĄ W KOSMOS)
         self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
 
-    def update_pheromone_rank(self, ants, best_gtr_overall, best_cost):
+    def update_pheromone_rank(self, ants, best_gtr_overall, best_cost, ranked_ants_count=None):
         # 1. Parowanie (Evaporation)
         self.evaporate()
 
@@ -218,11 +282,11 @@ class ACO_for_VRP_5:
         sorted_ants = sorted(ants, key=lambda x: x.cost)
 
         # 3. Parametr rankingu (np. top 6 mrówek zostawia ślad)
-        w = 10
-        for rank, ant in enumerate(sorted_ants[:w]):
+        for rank, ant in enumerate(sorted_ants[:ranked_ants_count]):
             ids = [node.id for node in ant.gtr]
-            weight = w - rank  # Najlepsza ma wagę 6, druga 5, itd.
-            delta = weight / ant.cost
+            weight = ranked_ants_count - rank  # Najlepsza ma wagę 6, druga 5, itd.
+            delta = (self.Q_pheromone / ant.cost) * weight
+
             for i in range(len(ids) - 1):
                 a, b = ids[i], ids[i + 1]
                 self.pheromone[a][b] += delta
@@ -231,7 +295,7 @@ class ACO_for_VRP_5:
         # 3. ELITIST UPDATE - Bonus dla mistrza
         # Najlepsza znaleziona trasa dostaje np. 5-krotnie silniejszy feromon
         if best_gtr_overall is not None:
-            elite_weight = self.ants * self.intensity_elite_ant  # Jakby 5 mrówek przeszło tą samą idealną trasą
+            elite_weight = ranked_ants_count * self.intensity_elite_ant  # zwiększenie wagi dla elitarnego rozwiązania
             d_tau_elite = (self.Q_pheromone / best_cost) * elite_weight
 
             elite_ids = [node.id for node in best_gtr_overall]
@@ -249,10 +313,10 @@ class ACO_for_VRP_5:
         intensity: jak mocno potrząsamy (0.1 = 10%, 0.4 = 40%)
         """
         # 1. Dodanie losowego szumu na podstawie intensywności
-        low = 1.0 - intensity
-        high = 1.0 + intensity
+        low = -intensity
+        high = intensity
         noise = np.random.uniform(low, high, size=self.pheromone.shape)
-        self.pheromone *= noise
+        self.pheromone += noise * self.tau_max
 
         # 2. Wygładzanie (Pheromone Smoothing)
         # Przy dużym wzbudzeniu bardziej zbliżamy do tau_max, by wyrównać szanse
@@ -320,6 +384,8 @@ class ACO_for_VRP_5:
         self.history_best_overall = []  # Najlepszy koszt
         self.history_best_in_iter = []  # Najlepsze koszty każdej iteracji
         self.history_avg_in_iter = []  # Średni koszt w danej iteracj
+        self.history_small_shake = []  # epoki małych wstrząsów
+        self.history_big_shake = []  # epoki dużych wstrząsów
 
         # Tworzymy pasek postępu
         pbar = tqdm(range(self.iterations), desc="ACO 5", unit="it")
@@ -349,10 +415,13 @@ class ACO_for_VRP_5:
             # Aktualizacja feromonów
             if is_big_shaking_phase:
                 # W fazie wstrząsu nie promujemy starego rekordu! Niech budują nowe ścieżki.
-                self.update_pheromone(ants)
+                # self.update_pheromone(ants)
+                self.update_pheromone_rank(ants, best_gtr_overall, best_cost,
+                                           ranked_ants_count=self.ranked_ants_count[1])
             else:
                 # W fazie normalnej promujemy elitę
-                self.update_pheromone_rank(ants, best_gtr_overall, best_cost)
+                self.update_pheromone_rank(ants, best_gtr_overall, best_cost,
+                                           ranked_ants_count=self.ranked_ants_count[0])
                 # self.update_pheromone_elite(ants, best_gtr_overall, best_cost)
 
             if not found_better_in_iter:
@@ -368,12 +437,15 @@ class ACO_for_VRP_5:
             if no_improvement_count_shake >= self.patience_small_shake:
                 self.shake_pheromones(intensity=self.intensity_small_shake)
                 no_improvement_count_shake = 0
+                self.history_small_shake.append(i)
 
             # Pobudzenie feromonów - big shake
             if no_improvement_count_big_shake >= self.patience_big_shake:
                 self.shake_pheromones(intensity=self.intensity_big_shake)
                 is_big_shaking_phase = True
+                no_improvement_count_shake = 0
                 no_improvement_count_big_shake = 0
+                self.history_big_shake.append(i)
 
                 self.evaporation = min(self.evaporation * 1.3, 0.3)
                 self.pheromone *= (1 - self.big_shake_evaporation)  # odparowanie przy big shake
@@ -411,7 +483,9 @@ class ACO_for_VRP_5:
         history_data = {
             'overall': self.history_best_overall,
             'avg': self.history_avg_in_iter,
-            'iter_best': self.history_best_in_iter
+            'iter_best': self.history_best_in_iter,
+            'small_shake': self.history_small_shake,
+            'big_shake': self.history_big_shake
         }
 
         return best_vehicles, best_cost, history_data

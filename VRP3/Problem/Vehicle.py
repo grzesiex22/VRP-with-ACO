@@ -13,7 +13,7 @@ class Vehicle:
 
     def __repr__(self):
         return f"Vehicle(id={self.id}, capacity={self.capacity})"
-    
+
     def to_json(self):
         route_str = []
         for r in self.route:
@@ -27,3 +27,22 @@ class Vehicle:
             "filling": self.filling,
             "duration": self.duration
         }
+
+    @staticmethod
+    def from_dict(data, nodes_dict):
+        """
+        Tworzy obiekt Vehicle na podstawie słownika z JSON.
+        nodes_dict: słownik {id_węzła: obiekt_Node}
+        """
+        # Tworzymy nową instancję pojazdu
+        v = Vehicle(id=data['id'], capacity=data['capacity'], filling=data['filling'])
+        v.duration = data.get('duration', 0)
+
+        # Rekonstrukcja trasy ze stringa "0->18->2->..." na listę obiektów Node
+        route_ids = data['route'].split("->")
+        for n_id in route_ids:
+            node_obj = nodes_dict.get(int(n_id))
+            if node_obj:
+                v.route.append(node_obj)
+
+        return v
