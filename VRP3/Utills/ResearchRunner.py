@@ -51,7 +51,7 @@ class ResearchRunner:
             with open(self.path_csv, 'r', newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    cost = float(row['best_cost_minutes'])
+                    cost = float(row['best_cost'])
                     if cost < self.global_best_score:
                         self.global_best_score = cost
                         # Odtwarzamy string konfiguracyjny do wyświetlania
@@ -86,7 +86,7 @@ class ResearchRunner:
             try:
                 with open(path_best_run, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    self.global_best_score = data.get('cost_minutes', self.global_best_score)
+                    self.global_best_score = data.get('cost', self.global_best_score)
 
                     # Konwersja listy słowników na listę obiektów Vehicle
                     self.global_best_vehicles = []
@@ -183,7 +183,7 @@ class ResearchRunner:
         # Przygotowanie nagłówków (wszystkie parametry + wyniki)
         sample_cfg = configs[0]
         param_headers = list(sample_cfg.keys())
-        metric_headers = ["config_id", "repeat", "best_cost_minutes", "best_iteration",
+        metric_headers = ["config_id", "repeat", "best_cost", "best_cost_minutes", "best_iteration",
                           "avg_cost_final_minutes", "diversity_final",
                           "iterations_done", "execution_time",
                           "big_shakes_count", "big_shakes_at_iter", "last_big_shake_iter"]
@@ -222,7 +222,7 @@ class ResearchRunner:
                         "Cfg": f"{idx}/{len(configs)}",
                         "Rep": r,
                         "CurrCfg": current_cfg_str,
-                        "BestScore": f"{self.global_best_score:.2f} min",
+                        "BestScore": f"{self.global_best_score/60:.2f} min",
                         "BestCfg": self.global_best_config_str
                     })
 
@@ -273,6 +273,7 @@ class ResearchRunner:
                     row = {
                         "config_id": idx,
                         "repeat": r,
+                        "best_cost": round(best_cost, 4),
                         "best_cost_minutes": round(best_cost / 60, 4),
                         "best_iteration": best_history.get("best_iter_nr", -1),
                         "avg_cost_final_minutes": round(last_avg, 4) if last_avg else None,
