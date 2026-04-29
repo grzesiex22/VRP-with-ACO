@@ -33,8 +33,8 @@ class Plotter:
         plt.figure(figsize=(10, 6))
 
         # Konwersja danych na minuty
-        iterations = range(len(history['overall']))
-        best_overall = [c / 60 for c in history['overall']]
+        iterations = range(len(history['overall_best']))
+        best_overall = [c / 60 for c in history['overall_best']]
         avg_iter = [c / 60 for c in history['avg']]
         iter_best = [c / 60 for c in history['iter_best']]
 
