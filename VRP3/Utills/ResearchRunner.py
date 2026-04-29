@@ -194,7 +194,7 @@ class ResearchRunner:
 
         if already_done_count >= total_tests:
             print(f"Wszystkie testy ({total_tests}) są już w pliku!")
-            return
+            return self.global_best_vehicles, self.global_best_score, self.global_best_history
 
         print(f"Wznawianie: Pominięto {already_done_count} wykonanych rekordów. "
               f"Pozostało: {total_tests - already_done_count}")
