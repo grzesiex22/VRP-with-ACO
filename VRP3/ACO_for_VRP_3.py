@@ -355,7 +355,7 @@ class ACO_for_VRP_3:
         self.problem.vehicles = best_vehicles
 
         history_data = {
-            'overall': self.history_best_overall,
+            'overall_best': self.history_best_overall,
             'avg': self.history_avg_in_iter,
             'iter_best': self.history_best_in_iter,
             'small_shake': self.history_small_shake,

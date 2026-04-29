@@ -267,8 +267,6 @@ def main():
             file_name=f"{dataset_name}_conv_{config['save_name']}"
         )
 
-
-
         # Podgląd tras w konsoli
         print(f"\n{name} - Najlepsza trasa:")
         for v in vehicles:
