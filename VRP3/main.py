@@ -15,13 +15,14 @@ from VRP3.Utills.Summarizer import Summarizer
 from VRP3.Utills.Plotter import Plotter
 from VRP3.Utills.VRP_saver import VRP_saver
 from VRP3.Utills.ResearchRunner import ResearchRunner
-
+from VRP3.Utills.SummaryResearch import SummaryResearch
+from VRP3.Utills.Helpers import Helpers
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
-SAVE = True
-RESEARCH = True
-SUMMARY_RESEARCH = False
+SAVE = False
+RESEARCH = False
+SUMMARY_RESEARCH = True
 BEST_PARAMETERS_ACO_3 = False
 BEST_PARAMETERS_ACO_4 = False
 TEST = False
@@ -192,13 +193,38 @@ def main():
         exit(0)
 
     # --- 5. PODSUMOWANIE BADAŃ - POSZUKIWANIA PARAMETRÓW ---
-    # TU: odczytać, zagregować, policzyć średnie, min, max, i zapisać do kolejnego csv z podsumowaniem badań
     if SUMMARY_RESEARCH:
-        exit(0)
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{'PODSUMOWANIE BADAŃ':^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
 
-    # --- 6. ODCZYT NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 3':^118}")
+        SummaryResearch.aggregate(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                  file_name="research_dataset_ACO_3_C39_A40_R10")
+
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 4':^118}")
+        SummaryResearch.aggregate(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                  file_name="research_dataset_ACO_4_C39_A40_R10")
+
+    # --- 6. WYBÓR NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
     # TU: wybrać najlepszy zestaw parametrów i zapisać do pliku
     if SUMMARY_RESEARCH:
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{'WYBÓR NAJLEPSZYCH PARAMETRÓW':^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
+
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 3':^118}")
+
+        # KOD DO WYBORU NAJLEPSZYCH PARAM
+
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 4':^118}")
+
+        # KOD DO WYBORU NAJLEPSZYCH PARAM
+
         exit(0)
 
     # --- 7. ACO - PARAMETRY ---
@@ -207,6 +233,9 @@ def main():
     aco_configs = []
 
     if BEST_PARAMETERS_ACO_3:
+
+        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_3 Z PLIKU
+
         exit()
     else:
         aco_configs.append({
@@ -218,6 +247,9 @@ def main():
             })
 
     if BEST_PARAMETERS_ACO_4:
+
+        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_4 Z PLIKU
+
         exit()
     else:
         aco_configs.append({
