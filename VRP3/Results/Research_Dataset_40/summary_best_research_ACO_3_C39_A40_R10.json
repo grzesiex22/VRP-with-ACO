@@ -1,0 +1,23 @@
+{
+    "id": 83.0,
+    "name": "ACO 3 (seq.)",
+    "save_name": "ACO_3",
+    "class": "ACO_for_VRP_3",
+    "params": {
+        "ants": 40.0,
+        "iterations": 4000.0,
+        "alpha": 0.5,
+        "beta": 3.5,
+        "evaporation": 0.1,
+        "patience": 650.0,
+        "patience_big_shake": 100.0,
+        "big_shake_evaporation": 0.4,
+        "big_shake_duration": 20.0,
+        "intensity_big_shake": 0.6,
+        "tau_min": 0.01,
+        "tau_max": 10.0
+    },
+    "min_cost": 66012.0995,
+    "max_cost": 78275.832,
+    "avg_cost": 73670.41320000001
+}

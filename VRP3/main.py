@@ -15,19 +15,19 @@ from VRP3.Utills.Summarizer import Summarizer
 from VRP3.Utills.Plotter import Plotter
 from VRP3.Utills.VRP_saver import VRP_saver
 from VRP3.Utills.ResearchRunner import ResearchRunner
-
+from VRP3.Utills.SummaryResearch import SummaryResearch
+from VRP3.Utills.Helpers import Helpers
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
-SAVE = True
-RESEARCH = True
-SUMMARY_RESEARCH = False
+SAVE = False
+RESEARCH = False
+SUMMARY_RESEARCH = True
 BEST_PARAMETERS_ACO_3 = False
 BEST_PARAMETERS_ACO_4 = False
 TEST = False
 
 DIR_NAME = "Results"
-
 
 def main():
     # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
@@ -188,12 +188,19 @@ def main():
 
     # --- 5. PODSUMOWANIE BADAŃ - POSZUKIWANIA PARAMETRÓW ---
     # TU: odczytać, zagregować, policzyć średnie, min, max, i zapisać do kolejnego csv z podsumowaniem badań
+    research_dataset_path = 'Results/Research_Dataset_40/research_dataset_ACO_3_C39_A40_R10.csv'
+    summary_research_path = 'Results/Research_Dataset_40/summary_research_ACO_3_C39_A40_R10.json'
+    summary_best_research_path = 'Results/Research_Dataset_40/summary_best_research_ACO_3_C39_A40_R10.json'
+
     if SUMMARY_RESEARCH:
-        exit(0)
+        SummaryResearch.aggregate(research_dataset_path, summary_research_path)
+        # exit(0)
 
     # --- 6. ODCZYT NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
     # TU: wybrać najlepszy zestaw parametrów i zapisać do pliku
     if SUMMARY_RESEARCH:
+        best_aco_config = SummaryResearch.get_best_aco_config(summary_research_path, 'avg_cost')
+        Helpers.save_json(summary_best_research_path, best_aco_config, verbose=True)
         exit(0)
 
     # --- 7. ACO - PARAMETRY ---
