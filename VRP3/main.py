@@ -200,7 +200,7 @@ def main():
     # TU: wybrać najlepszy zestaw parametrów i zapisać do pliku
     if SUMMARY_RESEARCH:
         best_aco_config = SummaryResearch.get_best_aco_config(summary_research_path, 'avg_cost')
-        Helpers.save_json(summary_best_research_path, best_aco_config, verbose=True)
+        VRP_saver.save_json(summary_best_research_path, best_aco_config, verbose=True)
         exit(0)
 
     # --- 7. ACO - PARAMETRY ---

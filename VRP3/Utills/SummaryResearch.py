@@ -4,6 +4,7 @@ import sys
 import re
 import json
 from Utills.Helpers import Helpers
+from Utills.VRP_saver import VRP_saver
 
 class SummaryResearch:
     @staticmethod
@@ -43,14 +44,14 @@ class SummaryResearch:
             print(f"Warning! {src_path} must be csv")
             return
 
-        dirname, filename = dst_path.rsplit('/', maxsplit=1)
+        # dirname, filename = dst_path.rsplit('/', maxsplit=1)
 
-        if os.path.exists(dirname):
-            os.makedirs(dirname, exist_ok=True)
+        # if os.path.exists(dirname):
+        #     os.makedirs(dirname, exist_ok=True)
 
-        if not re.search(r'\.json$', filename):
-            print(f"Warning! {filename} must be json")
-            return            
+        # if not re.search(r'\.json$', filename):
+        #     print(f"Warning! {filename} must be json")
+        #     return            
         
         # Extract data
         headers = {}
@@ -98,7 +99,7 @@ class SummaryResearch:
                     num_rows = 0
                     
 
-        Helpers.save_json(dst_path, to_json, verbose=True)
+        VRP_saver.save_json(dst_path, to_json, verbose=True)
 
     @staticmethod        
     def get_best_aco_config(src_path, feature='avg_cost'):
