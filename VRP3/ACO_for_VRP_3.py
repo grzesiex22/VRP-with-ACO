@@ -15,30 +15,35 @@ init(autoreset=True)
 
 class ACO_for_VRP_3:
 
-    def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05, patience=1000,
-                 q_pheromone=100.0, tau_min=0.01, tau_max=5.0):
+    def __init__(self, problem: VRP, ants=20, iterations=100, alpha=1, beta=2, evaporation=0.05,
+                    patience=1000, patience_big_shake=500, big_shake_evaporation=0.2, big_shake_duration=20, intensity_big_shake=0.3,
+                    tau_min=0.01, tau_max=5.0, verbose=True):
+        self.verbose = verbose
+
         self.problem = problem
         self.ants = ants
         self.iterations = iterations
         self.patience = patience
 
-        n = len(problem.nodes)
-        self.phr_max_lvl = 0.8
-        self.phr_base_lvl = 0.3
-        self.phr_min_lvl = 0.05
-        self.phr_intensifier = 0.1
-        self.pheromone = [[self.phr_base_lvl]*n for _ in range(n)]
-
         self.alpha = alpha
         self.beta = beta
         self.evaporation = evaporation
-        self.Q_pheromone = q_pheromone
+
+        self.patience_big_shake = patience_big_shake
+        self.big_shake_evaporation = big_shake_evaporation
+        self.intensity_big_shake = intensity_big_shake
+        self.big_shake_duration = big_shake_duration
 
         # ograniczenia feromonu
         self.tau_max = tau_max
         self.tau_min = tau_min
+        self.tau_base = (tau_max + tau_min) / 2
+
+        n = len(problem.nodes)
+        self.pheromone = np.array([[self.tau_base]*n for _ in range(n)])
 
         # do szybszego odczytu potęg
+        self.time_matrix_seconds = np.array(self.problem.time_matrix_seconds)
         self.eta_matrix = (1.0 / (np.array(self.problem.time_matrix_seconds) + 1e-6)) ** self.beta
 
         # Tablice do przechowywania historii (do wykresu)
@@ -171,105 +176,180 @@ class ACO_for_VRP_3:
                 self.pheromone[a.id][b.id] += cost / self.eta_matrix[a.id][b.id]
                 self.pheromone[b.id][a.id] += cost / self.eta_matrix[b.id][a.id]
 
-                if self.pheromone[a.id][b.id] > self.phr_max_lvl:
-                    self.pheromone[a.id][b.id] = self.phr_max_lvl
-                    self.pheromone[b.id][a.id] = self.phr_max_lvl
+                if self.pheromone[a.id][b.id] > self.tau_max:
+                    self.pheromone[a.id][b.id] = self.tau_max
+                    self.pheromone[b.id][a.id] = self.tau_max
 
-    def update_pheromone(self, ants):
-        for ant in ants:
-            self.update_one(ant.gtr)
+    # def update_pheromone(self, ants):
+    #     for ant in ants:
+    #         self.update_one(ant.gtr)
 
-    def reset_phermones(self, best_vehicles):
-        n = len(self.pheromone)
+    # def reset_phermones(self, best_vehicles):
+    #     n = len(self.pheromone)
 
-        # 1. Reset całej macierzy do poziomu bazowego
-        new_pheromone = [
-            [self.phr_base_lvl for _ in range(n)]
-            for _ in range(n)
-        ]
+    #     # 1. Reset całej macierzy do poziomu bazowego
+    #     new_pheromone = [
+    #         [self.phr_base_lvl for _ in range(n)]
+    #         for _ in range(n)
+    #     ]
 
-        # 2. Zachowanie feromonów najlepszej trasy
-        for vehicle in best_vehicles:
-            route = [node.id for node in vehicle.route]
+    #     # 2. Zachowanie feromonów najlepszej trasy
+    #     for vehicle in best_vehicles:
+    #         route = [node.id for node in vehicle.route]
 
-            for i in range(len(route) - 1):
-                a = route[i]
-                b = route[i + 1]
+    #         for i in range(len(route) - 1):
+    #             a = route[i]
+    #             b = route[i + 1]
 
-                # kopiujemy feromon z poprzedniej macierzy
-                new_pheromone[a][b] = self.pheromone[a][b]
-                new_pheromone[b][a] = self.pheromone[b][a]
+    #             # kopiujemy feromon z poprzedniej macierzy
+    #             new_pheromone[a][b] = self.pheromone[a][b]
+    #             new_pheromone[b][a] = self.pheromone[b][a]
 
-        # 3. Podmiana macierzy
-        self.pheromone = new_pheromone
+    #     # 3. Podmiana macierzy
+    #     self.pheromone = new_pheromone
 
-    def intensify_phermones(self):
-        for row in self.pheromone:
-            for phr in row:
-                if phr < self.phr_min_lvl:
-                    phr += self.phr_intensifier
+    # def intensify_phermones(self):
+    #     for row in self.pheromone:
+    #         for phr in row:
+    #             if phr < self.phr_min_lvl:
+    #                 phr += self.phr_intensifier
 
-    def two_opt(self, gtr, eps=10):
-        n = len(gtr)
+    # def two_opt(self, gtr, eps=10):
+    #     n = len(gtr)
 
-        while True:
-            p1 = random.randint(1, n - 2)
-            low = max(1, p1 - eps)
-            high = min(n - 1, p1 + eps)
-            p2 = random.randint(low, high)
+    #     while True:
+    #         p1 = random.randint(1, n - 2)
+    #         low = max(1, p1 - eps)
+    #         high = min(n - 1, p1 + eps)
+    #         p2 = random.randint(low, high)
 
-            if p1 == p2:
-                continue
+    #         if p1 == p2:
+    #             continue
 
-            if p2 < p1:
-                p1, p2 = p2, p1
+    #         if p2 < p1:
+    #             p1, p2 = p2, p1
 
-            # sprawdź czy w środku nie ma depotu
-            if any(node.id == 0 for node in gtr[p1:p2+1]):
-                continue
+    #         # sprawdź czy w środku nie ma depotu
+    #         if any(node.id == 0 for node in gtr[p1:p2+1]):
+    #             continue
 
-            break
+    #         break
 
-        gtr[p1:p2] = reversed(gtr[p1:p2])
+    #     gtr[p1:p2] = reversed(gtr[p1:p2])
 
-    def local_swap(self, gtr, eps=3):
-        n = len(gtr)
+    # def local_swap(self, gtr, eps=3):
+    #     n = len(gtr)
 
-        while True:
-            p1 = random.randint(1, n - 2)
-            low = max(1, p1 - eps)
-            high = min(n - 1, p1 + eps)
-            p2 = random.randint(low, high)
+    #     while True:
+    #         p1 = random.randint(1, n - 2)
+    #         low = max(1, p1 - eps)
+    #         high = min(n - 1, p1 + eps)
+    #         p2 = random.randint(low, high)
 
-            if p1 == p2:
-                continue
+    #         if p1 == p2:
+    #             continue
 
-            if p2 < p1:
-                p1, p2 = p2, p1
+    #         if p2 < p1:
+    #             p1, p2 = p2, p1
 
-            # sprawdź czy w środku nie ma depotu
-            if any(node.id == 0 for node in gtr[p1:p2+1]):
-                continue
+    #         # sprawdź czy w środku nie ma depotu
+    #         if any(node.id == 0 for node in gtr[p1:p2+1]):
+    #             continue
 
-            break
+    #         break
 
-        gtr[p1], gtr[p2] = gtr[p2], gtr[p1]
+    #     gtr[p1], gtr[p2] = gtr[p2], gtr[p1]
+
+    def shake_pheromones(self, intensity=0.2):
+        """
+        intensity: jak mocno potrząsamy (0.1 = 10%, 0.4 = 40%)
+        """
+        # 1. Dodanie losowego szumu na podstawie intensywności
+        low = - intensity
+        high = intensity
+        noise = np.random.uniform(low, high, size=self.pheromone.shape)
+        self.pheromone += noise * self.tau_max
+
+        # 2. Wygładzanie (Pheromone Smoothing)
+        # Przy dużym wzbudzeniu bardziej zbliżamy do tau_max, by wyrównać szanse
+        smoothing_factor = intensity / 2
+        self.pheromone = self.pheromone + smoothing_factor * (self.tau_max - self.pheromone)
+
+        # 3. Pilnowanie granic MMAS
+        self.pheromone = np.clip(self.pheromone, self.tau_min, self.tau_max)
+    
+    def calculate_diversity(self, ants_vehicles):
+        """
+        solutions: lista mrówek (self.ants)
+        ant.vehicles: lista pojazdów
+        vehicle.route: lista obiektów typu 'Road/Edge'
+        road: obiekt posiadający węzły (np. road.from_node, road.to_node)
+        """
+        all_edge_sets = []
+
+        for ant_vehicles in ants_vehicles:
+            ant_edges = set()
+            for ant_vehicle in ant_vehicles:
+                # Iterujemy po liście dróg wewnątrz pojazdu
+                route = ant_vehicle.route
+
+                if not route or len(route) < 2:
+                    continue
+
+                # Przechodzimy po węzłach w trasie i tworzymy krawędzie
+                for i in range(len(route) - 1):
+                    u_id = route[i].id
+                    v_id = route[i + 1].id
+
+                    if u_id != v_id:
+                        ant_edges.add(tuple((u_id, v_id)))
+
+            if ant_edges:
+                all_edge_sets.append(ant_edges)
+
+        if not all_edge_sets:
+            return 0.0
+
+        # Całkowita liczba unikalnych krawędzi odkrytych przez całą populację
+        U = len(set().union(*all_edge_sets))
+
+        # Suma wszystkich krawędzi we wszystkich rozwiązaniach
+        total_edges_sum = sum(len(s) for s in all_edge_sets)
+
+        # Średnia liczba krawędzi na mrówkę
+        avg_edges = total_edges_sum / len(all_edge_sets)
+
+        # Mianownik normalizujący: różnica między totalną liczbą krawędzi a średnią
+        denominator = total_edges_sum - avg_edges
+
+        if denominator <= 0:
+            return 0.0
+
+        diversity = (U - avg_edges) / denominator
+
+        return float(max(0.0, min(1.0, diversity)))
 
     def run(self):
-
-        best_gtr = []
         best_vehicles = None
+        best_gtr_overall = None
+        best_cost = float("inf")
+        final_iter = 0
+        best_iter_nr = 0
+
         best_cost = float("inf")
 
         no_improvement_count = 0
+        no_improvement_count_big_shake = 0
+        is_big_shaking_phase = False
+        big_shakes_counter = 0
+        big_shakes_iters = []
 
         used_vehicles_count = 0
         vehicles_count = len(self.problem.vehicles)
 
-        num_best = int(self.ants * 1)
-        best_iters = []
-        best_iter_costs = [sys.maxsize] * num_best
-
+        base_evaporation = self.evaporation
+        base_beta = self.beta
+        base_alpha = self.alpha
         best_iter = None
         best_iter_cost = sys.maxsize
 
@@ -281,7 +361,13 @@ class ACO_for_VRP_3:
         self.history_big_shake = []  # epoki dużych wstrząsów
 
         # Tworzymy pasek postępu
-        pbar = tqdm(range(self.iterations), desc="ACO 3", unit="it")
+        iterator = range(self.iterations)
+        if self.verbose:
+            pbar = tqdm(iterator, desc="ACO 4", unit="it")
+        else:
+            pbar = iterator
+
+        iter_vehicles = []
 
         for i in pbar:
 
@@ -289,15 +375,11 @@ class ACO_for_VRP_3:
 
             found_better_in_iter = False
             iter_costs = []
+            iter_vehicles = []
 
             for ant in ants:
                 #### tu zrównoleglić
                 ant.build_route(self.pheromone, self.alpha, self.eta_matrix)
-
-                # for i in range(5):
-                #     self.local_swap(ant.gtr)
-                # if random.random() < 0.3:
-                #     self.two_opt(ant.gtr, 10)
 
                 cost, vehicles = self.solution_cost(ant.gtr)
                 ant.cost = cost
@@ -312,14 +394,16 @@ class ACO_for_VRP_3:
                 # best globally
                 if cost < best_cost:
                     best_cost = cost
-                    best_gtr = ant.gtr
+                    best_gtr_overall = ant.gtr.copy()  # (zapisujemy szkielet trasy)
+                    best_iter_nr = i
                     best_vehicles = vehicles
                     used_vehicles_count = sum(1 for v in best_vehicles if len(v.route) > 2)
                     no_improvement_count = 0
                     found_better_in_iter = True
                 #### tu zrównoleglić - koniec
 
-                # można podbijać losowo feromony gdy stagnacja
+                if no_improvement_count + 1 >= self.patience:
+                    iter_vehicles.append(vehicles)
 
             # Zapisujemy historię
             self.history_best_overall.append(best_cost)
@@ -329,37 +413,72 @@ class ACO_for_VRP_3:
             self.evaporate()
 
             self.update_one(best_iter)
-            self.update_one(best_gtr)
+            self.update_one(best_gtr_overall)
 
             if not found_better_in_iter:
                 no_improvement_count += 1
+                no_improvement_count_big_shake += 1
 
             # AKTUALIZACJA PASKA POSTĘPU
-            pbar.set_postfix({
-                "Best": f"{(best_cost/60):.2f} min",
-                "Veh": f"{used_vehicles_count}/{vehicles_count}",
-                "Evap": f"{self.evaporation:.2f}",
-                "Alfa": f"{self.alpha:.1f}",
-                "Beta": f"{self.beta:.1f}",
-                "Stagnation": f"{no_improvement_count}/{self.patience}"
-            })
+            if self.verbose:
+                pbar.set_postfix({
+                    "Best": f"{(best_cost/60):.2f} min",
+                    "Veh": f"{used_vehicles_count}/{vehicles_count}",
+                    "Evap": f"{self.evaporation:.2f}",
+                    "Alfa": f"{self.alpha:.1f}",
+                    "Beta": f"{self.beta:.1f}",
+                    "Stagnation": f"{no_improvement_count}/{self.patience}",
+                    "Big Shake": f"{no_improvement_count_big_shake}/{int(self.patience_big_shake)}"
+                })
+
+            # Pobudzenie feromonów - big shake
+            if no_improvement_count_big_shake >= self.patience_big_shake and no_improvement_count < self.patience:
+                self.shake_pheromones(intensity=self.intensity_big_shake)
+                is_big_shaking_phase = True
+                big_shakes_counter += 1
+                big_shakes_iters.append(i)
+                no_improvement_count_big_shake = 0
+                self.history_big_shake.append(i)
+
+                self.evaporation = min(self.evaporation * 1.3, 0.3)
+                self.pheromone *= (1 - self.big_shake_evaporation)  # odparowanie przy big shake
+
+                self.beta = 1.0
+                self.alpha = 2.0  # może alfa większe podczas shake
+                self.eta_matrix = (1.0 / (self.time_matrix_seconds + 1e-6)) ** self.beta
+
+            # Zakończenie fazy big shake
+            if is_big_shaking_phase and no_improvement_count_big_shake == self.big_shake_duration:
+                # Po 30 iteracjach od wstrząsu, wracamy do trybu "dopracowywania trasy"
+                is_big_shaking_phase = False
+                self.evaporation = base_evaporation
+                self.alpha = base_alpha
+                self.beta = base_beta
+                self.eta_matrix = (1.0 / (self.time_matrix_seconds + 1e-6)) ** self.beta
 
             # Decyzja o przerwaniu
             if no_improvement_count >= self.patience:
-                self.reset_phermones(best_vehicles)
-                # self.intensify_phermones()
-                no_improvement_count = 0
-                # print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
-                # break
+                final_iter = i
+                if self.verbose:
+                    print(Fore.RED + f"\n[EARLY STOPPING]" + Style.RESET_ALL + f" Brak poprawy przez {self.patience} iteracji. Przerywam w iteracji {i}.")
+                break
 
         self.problem.vehicles = best_vehicles
+
+        diversity_final = self.calculate_diversity(ants_vehicles=iter_vehicles)
 
         history_data = {
             'overall_best': self.history_best_overall,
             'avg': self.history_avg_in_iter,
             'iter_best': self.history_best_in_iter,
             'small_shake': self.history_small_shake,
-            'big_shake': self.history_big_shake
+            'big_shake': self.history_big_shake,
+            'iters_done': final_iter,
+            'best_iter_nr': best_iter_nr,
+            'big_shakes_iters': big_shakes_iters,
+            'big_shakes_count': big_shakes_counter,
+            'diversity_final': diversity_final
         }
 
-        return best_vehicles, best_cost, history_data
+
+        return best_vehicles, best_cost, history_data.copy()
