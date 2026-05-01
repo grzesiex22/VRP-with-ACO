@@ -237,26 +237,30 @@ class SummaryResearch:
             ACO_version = 'ACO_4'
         else:
             print(f'Nie ma zapisanych parametrów dla {ACO_version.group()}')
+            return
 
         to_json = {}
 
         with open(src_path, 'r') as f:
-            df = pd.read_csv(f)
+            df = pd.read_csv(f, dtype=str)
 
             comparable_columns = SummaryResearch.get_comparable_columns()
             params = SummaryResearch.get_param_names()[ACO_version]
 
             for comparable in comparable_columns:                
-                to_json[comparable] = {'params': {}}
+                entry = {'params': {}}
 
                 idx = pd.Series.idxmin(df[comparable])
+                row = df.loc[idx] 
 
-                for col_name, val in df.iloc[idx].items():
+                for col_name, val in row.items():
                     if col_name in params:
-                        to_json[comparable]['params'][col_name] = val
+                        entry['params'][col_name] = val
                     else:
-                        to_json[comparable][col_name] = val
+                        entry[col_name] = val
                 
+                to_json[comparable] = entry
+
         VRP_saver.save_json(dst_path, to_json, verbose=True)           
             
 
