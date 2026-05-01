@@ -23,11 +23,12 @@ SHOW_PLOT_CONV = False
 SAVE = False
 RESEARCH = False
 SUMMARY_RESEARCH = True
-BEST_PARAMETERS_ACO_3 = False
-BEST_PARAMETERS_ACO_4 = False
+BEST_PARAMETERS_ACO_3 = True
+BEST_PARAMETERS_ACO_4 = True
 TEST = False
 
 DIR_NAME = "Results"
+
 
 def main():
     # Inicjalizacja colorama (wymagana na Windowsie, by kody działały)
@@ -122,10 +123,35 @@ def main():
         print(f"{'DOBÓR_PARAMETRÓW':^118}")
         print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
 
-        # solver_info_aco_4 = {
-        #     "name": "ACO 4 (seq. with depot)",
-        #     "save_name": "ACO_4",
-        #     "class": ACO_for_VRP_4,
+        solver_info_aco_4 = {
+            "name": "ACO 4 (seq. with depot)",
+            "save_name": "ACO_4",
+            "class": ACO_for_VRP_4,
+            "params": {
+                "ants": ants_count,
+                "iterations": 4000,
+                "alpha": 999999,
+                "beta": 999999,
+                "evaporation": 999999,
+                "patience": 999999,
+                "patience_small_shake": 999999,
+                "patience_big_shake": 999999,
+                "big_shake_evaporation": 0.4,
+                "big_shake_duration": 999999,
+                "intensity_small_shake": 999999,
+                "intensity_big_shake": 999999,
+                "intensity_elite_ant": 0.5,
+                "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
+                "q_pheromone": 1000.0,
+                "tau_min": 0.01,
+                "tau_max": 10.0
+            }
+        }
+
+        # solver_info_aco_3 = {
+        #     "name": "ACO 3 (seq.)",
+        #     "save_name": "ACO_3",
+        #     "class": ACO_for_VRP_3,
         #     "params": {
         #         "ants": ants_count,
         #         "iterations": 4000,
@@ -147,60 +173,62 @@ def main():
         #     }
         # }
 
-        solver_info_aco_3 = {
-            "name": "ACO 3 (seq.)",
-            "save_name": "ACO_3",
-            "class": ACO_for_VRP_3,
-            "params": {
-                "ants": ants_count,
-                "iterations": 4000,
-                "alpha": 1,
-                "beta": 2,
-                "evaporation": 0.04,
-                "patience": 600,
-                "patience_big_shake": 50,
-                "big_shake_evaporation": 0.4,
-                "big_shake_duration": 10,
-                "intensity_big_shake": 0.03,
-                "tau_min": 0.01,
-                "tau_max": 10.0
-            }
-        }
-
-        research_runner = ResearchRunner(solver_info=solver_info_aco_3,
+        research_runner = ResearchRunner(solver_info=solver_info_aco_4,
                                          folder_name=DIR_NAME, subfolder_name=dataset_name)
         best_vehicles, best_cost, history = research_runner.run_experiment(problem=problem.copy(), repeats=10)
 
         # Plotowanie najlepszego wyniku
         plotter = Plotter()
         plotter.plot_single_aco(
-            name=solver_info_aco_3["name"],
+            name=solver_info_aco_4["name"],
             history=history,
             greedy_baseline=greedy_cost,
             save=True,  # Flaga zapisu
             show=SHOW_PLOT_CONV,
             folder_name="Results",
             subfolder_name=dataset_name,
-            file_name=f"{dataset_name}_conv_{solver_info_aco_3['save_name']}",
+            file_name=f"{dataset_name}_conv_{solver_info_aco_4['save_name']}",
         )
 
         exit(0)
 
     # --- 5. PODSUMOWANIE BADAŃ - POSZUKIWANIA PARAMETRÓW ---
-    # TU: odczytać, zagregować, policzyć średnie, min, max, i zapisać do kolejnego csv z podsumowaniem badań
-    research_dataset_path = 'Results/Research_Dataset_40/research_dataset_ACO_3_C39_A40_R10.csv'
-    summary_research_path = 'Results/Research_Dataset_40/summary_research_ACO_3_C39_A40_R10.json'
-    summary_best_research_path = 'Results/Research_Dataset_40/summary_best_research_ACO_3_C39_A40_R10.json'
-
     if SUMMARY_RESEARCH:
-        SummaryResearch.aggregate(research_dataset_path, summary_research_path)
-        # exit(0)
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{'PODSUMOWANIE BADAŃ':^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
 
-    # --- 6. ODCZYT NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 3':^118}")
+        SummaryResearch.aggregate(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                  file_name="research_dataset_ACO_3_C39_A40_R10")
+
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 4':^118}")
+        SummaryResearch.aggregate(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                  file_name="research_dataset_ACO_4_C39_A40_R10")
+
+    # --- 6. WYBÓR NAJLEPSZEGO ZESTAWU PARAMETRÓW ---
     # TU: wybrać najlepszy zestaw parametrów i zapisać do pliku
     if SUMMARY_RESEARCH:
-        best_aco_config = SummaryResearch.get_best_aco_config(summary_research_path, 'avg_cost')
-        VRP_saver.save_json(summary_best_research_path, best_aco_config, verbose=True)
+        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print(f"{'WYBÓR NAJLEPSZYCH PARAMETRÓW':^118}")
+        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
+
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 3':^118}")
+
+        # KOD DO WYBORU NAJLEPSZYCH PARAM
+        SummaryResearch.find_best_in_category(f'{DIR_NAME}/{dataset_name}/research_dataset_ACO_3_C39_A40_R10_summary.csv',
+                                              f'{DIR_NAME}/{dataset_name}/best_in_category_ACO_3_C39_A40_R10.json')
+
+        print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
+        print(f"{'ACO 4':^118}")
+
+        # KOD DO WYBORU NAJLEPSZYCH PARAM
+        SummaryResearch.find_best_in_category(f'{DIR_NAME}/{dataset_name}/research_dataset_ACO_4_C39_A40_R10_summary.csv',
+                                              f'{DIR_NAME}/{dataset_name}/best_in_category_ACO_4_C39_A40_R10.json')
+
         exit(0)
 
     # --- 7. ACO - PARAMETRY ---
@@ -209,7 +237,21 @@ def main():
     aco_configs = []
 
     if BEST_PARAMETERS_ACO_3:
-        exit()
+
+        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_3 Z PLIKU
+        path_to_best = f'{DIR_NAME}/{dataset_name}/best_in_category_ACO_3_C39_A40_R10.json'
+        params = SummaryResearch.get_best_aco_config(src_path=path_to_best, feature='best_cost_min')['params']
+        
+        aco_configs.append({
+            "name": "ACO 3 (seq.)",
+            "save_name": "ACO_3",
+            "class": ACO_for_VRP_3,
+            "params": params
+            })
+
+        print(f'ACO_3_configs: \n{aco_configs}')
+        
+        # exit()
     else:
         aco_configs.append({
             "name": "ACO 3 (seq.)",
@@ -220,6 +262,20 @@ def main():
             })
 
     if BEST_PARAMETERS_ACO_4:
+
+        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_4 Z PLIKU
+        path_to_best = f'{DIR_NAME}/{dataset_name}/best_in_category_ACO_4_C39_A40_R10.json'
+        params = SummaryResearch.get_best_aco_config(src_path=path_to_best, feature='best_cost_min')['params']
+        
+        aco_configs.append({
+            "name": "ACO 4 (seq.)",
+            "save_name": "ACO_4",
+            "class": ACO_for_VRP_4,
+            "params": params
+            })
+
+        print(f'ACO_4_configs: \n{aco_configs}')
+
         exit()
     else:
         aco_configs.append({
@@ -268,8 +324,6 @@ def main():
             subfolder_name=dataset_name,
             file_name=f"{dataset_name}_conv_{config['save_name']}"
         )
-
-
 
         # Podgląd tras w konsoli
         print(f"\n{name} - Najlepsza trasa:")

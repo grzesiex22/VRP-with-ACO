@@ -5,8 +5,13 @@ import re
 import json
 from Utills.Helpers import Helpers
 from Utills.VRP_saver import VRP_saver
+import pandas as pd
+import os
+import re
+
 
 class SummaryResearch:
+
     @staticmethod
     def current_aco_config(curr_id, row, headers):
         return {
@@ -34,72 +39,74 @@ class SummaryResearch:
         }
 
     @staticmethod
-    def aggregate(src_path, dst_path, limit_rows_per_config=10):
-        # Check paths
+    def aggregate(folder_name, subfolder_name, file_name):
+        # 1. Przygotowanie ścieżek
+        results_dir = VRP_saver.set_folder(folder_name, subfolder_name)
+        src_path = os.path.join(results_dir, f"{file_name}.csv")
+        dst_path = os.path.join(results_dir, f"{file_name}_summary.csv")
+
+        # 2. Sprawdzenie czy plik źródłowy istnieje
         if not os.path.exists(src_path):
-            print(f"Warning! {src_path} doesn't exist")
+            print(f"❌ Plik źródłowy NIE istnieje: {src_path}")
             return
+        else:
+            print(f"✅ Plik źródłowy znaleziony. Rozpoczynam agregację danych...")
 
-        if not re.search(r'\.csv$', src_path):
-            print(f"Warning! {src_path} must be csv")
-            return
+        try:
+            # 3. Wczytanie danych
+            df = pd.read_csv(src_path)
 
-        # dirname, filename = dst_path.rsplit('/', maxsplit=1)
+            # 4. Definicja kolumn do statystyk
+            # Na podstawie Twoich metryk: best_cost, best_iteration, execution_time, itp.
+            metrics = [
+                'best_cost', 'best_cost_minutes', 'best_iteration', 'iterations_done',
+                'avg_cost_final_minutes', 'diversity_final',
+                'execution_time', 'big_shakes_count'
+            ]
 
-        # if os.path.exists(dirname):
-        #     os.makedirs(dirname, exist_ok=True)
+            # 5. Grupowanie i wyliczanie statystyk
+            # Tworzymy słownik agregacji: dla metryk liczymy zestaw funkcji, dla repeat liczymy rozmiar grupy
+            stats_to_compute = ['min', 'max', 'mean', 'std', 'var', 'median']
+            agg_dict = {m: stats_to_compute for m in metrics}
+            agg_dict['repeat'] = 'count'
 
-        # if not re.search(r'\.json$', filename):
-        #     print(f"Warning! {filename} must be json")
-        #     return            
-        
-        # Extract data
-        headers = {}
+            # Grupowanie po config_id
+            summary_df = df.groupby('config_id').agg(agg_dict)
 
-        with open(src_path, 'r') as src_file:
-            csvreader = csv.reader(src_file)
+            # 6. Spłaszczanie nazw kolumn dla pliku CSV (np. 'best_cost' + 'mean' -> 'best_cost_avg')
+            # Zmieniamy 'mean' na 'avg' w nazwach kolumn, żeby pasowało do Twoich wymagań
+            summary_df.columns = [
+                f"{col}_{stat.replace('mean', 'avg')}" if col != 'repeat' else 'repeats_count'
+                for col, stat in summary_df.columns
+            ]
 
-            # get headers
-            header_row = next(csvreader)
-            for i, name in enumerate(header_row):
-                headers[name] = i
+            # 7. Dołączenie parametrów konfiguracji (alpha, beta, itp.)
+            # Wykluczamy metryki, żeby zostały same parametry wejściowe
+            exclude_from_params = metrics + ['repeat', 'config_id', 'last_big_shake_iter', 'big_shakes_at_iter']
+            param_cols = [c for c in df.columns if c not in exclude_from_params]
+            params_df = df.groupby('config_id')[param_cols].first()
 
-            # get aco configurations
-            curr_id = 0
-            sum_cost = 0
-            num_rows = 0
-            max_cost = 0
-            min_cost = sys.maxsize
-            
-            to_json = {}
+            # Łączymy parametry ze statystykami w jedną tabelę
+            final_table = pd.concat([params_df, summary_df], axis=1)
 
-            for i, row in enumerate(csvreader):
-                curr_id = row[headers['config_id']] 
-                
-                if num_rows == 0:
-                    to_json[curr_id] = SummaryResearch.current_aco_config(curr_id, row, headers)
-                    # curr_id = next_id                   
+            # --- NOWA LOGIKA USTAWIANIA KOLEJNOŚCI KOLUMN ---
+            # 1. Wyciągamy 'repeats_count' i parametry (alpha, beta, itp.)
+            # 2. Wyciągamy resztę statystyk
+            all_cols = list(final_table.columns)
 
-                cost = float(row[headers['best_cost']])
+            # Tworzymy listę w nowej kolejności:
+            # Zaczynamy od repeats_count, potem parametry, potem reszta statystyk
+            new_order = ['repeats_count'] + [c for c in all_cols if c != 'repeats_count']
+            final_table = final_table[new_order]
 
-                max_cost = max(cost, max_cost)
-                min_cost = min(cost, min_cost)
-                sum_cost += cost 
-                num_rows += 1
+            # 8. ZAPIS DO CSV
+            final_table.to_csv(dst_path, index=True)  # index=True zachowa config_id jako pierwszą kolumnę
+            print(f"💾 Zapisano podsumowanie CSV: {dst_path}")
 
-                if num_rows >= limit_rows_per_config:
-                    if to_json is not None:
-                        to_json[curr_id]['min_cost'] = min_cost
-                        to_json[curr_id]['max_cost'] = max_cost
-                        to_json[curr_id]['avg_cost'] = sum_cost / num_rows
-
-                    max_cost = 0
-                    min_cost = sys.maxsize
-                    sum_cost = 0
-                    num_rows = 0
-                    
-
-        VRP_saver.save_json(dst_path, to_json, verbose=True)
+        except Exception as e:
+            print(f"❌ Wystąpił błąd: {e}")
+            import traceback
+            traceback.print_exc()
 
     @staticmethod        
     def get_best_aco_config(src_path, feature='avg_cost'):
@@ -132,6 +139,125 @@ class SummaryResearch:
         return best_aco_config
             
 
+    @staticmethod
+    def get_comparable_columns():
+        return [
+            "best_cost_min", "best_cost_max", "best_cost_avg", "best_cost_std", "best_cost_var", "best_cost_median",
+            "best_cost_minutes_min", "best_cost_minutes_max", "best_cost_minutes_avg", "best_cost_minutes_std",
+            "best_cost_minutes_var", "best_cost_minutes_median",
+            "best_iteration_min", "best_iteration_max", "best_iteration_avg", "best_iteration_std",
+            "best_iteration_var", "best_iteration_median",
+            "iterations_done_min", "iterations_done_max", "iterations_done_avg", "iterations_done_std",
+            "iterations_done_var", "iterations_done_median",
+            "avg_cost_final_minutes_min", "avg_cost_final_minutes_max", "avg_cost_final_minutes_avg",
+            "avg_cost_final_minutes_std", "avg_cost_final_minutes_var", "avg_cost_final_minutes_median",
+            "diversity_final_min", "diversity_final_max", "diversity_final_avg", "diversity_final_std",
+            "diversity_final_var", "diversity_final_median",
+            "execution_time_min", "execution_time_max", "execution_time_avg", "execution_time_std",
+            "execution_time_var", "execution_time_median",
+            "big_shakes_count_min", "big_shakes_count_max", "big_shakes_count_avg", "big_shakes_count_std",
+            "big_shakes_count_var", "big_shakes_count_median"
+        ]
+    
+    @staticmethod
+    def get_comparable_columns():
+        return [
+            "best_cost_min", "best_cost_max", "best_cost_avg", "best_cost_std", "best_cost_var", "best_cost_median",
+            "best_cost_minutes_min", "best_cost_minutes_max", "best_cost_minutes_avg", "best_cost_minutes_std",
+            "best_cost_minutes_var", "best_cost_minutes_median",
+            "best_iteration_min", "best_iteration_max", "best_iteration_avg", "best_iteration_std",
+            "best_iteration_var", "best_iteration_median",
+            "iterations_done_min", "iterations_done_max", "iterations_done_avg", "iterations_done_std",
+            "iterations_done_var", "iterations_done_median",
+            "avg_cost_final_minutes_min", "avg_cost_final_minutes_max", "avg_cost_final_minutes_avg",
+            "avg_cost_final_minutes_std", "avg_cost_final_minutes_var", "avg_cost_final_minutes_median",
+            "diversity_final_min", "diversity_final_max", "diversity_final_avg", "diversity_final_std",
+            "diversity_final_var", "diversity_final_median",
+            "execution_time_min", "execution_time_max", "execution_time_avg", "execution_time_std",
+            "execution_time_var", "execution_time_median",
+            "big_shakes_count_min", "big_shakes_count_max", "big_shakes_count_avg", "big_shakes_count_std",
+            "big_shakes_count_var", "big_shakes_count_median"
+        ]
+    
+    @staticmethod
+    def get_param_names():
+        return {        
+            'ACO_3': [
+                "ants",
+                "iterations",
+                "alpha",
+                "beta",
+                "evaporation",
+                "patience",
+                "patience_big_shake",
+                "big_shake_evaporation",
+                "big_shake_duration",
+                "intensity_big_shake",
+                "tau_min",
+                "tau_max"
+            ],
+            'ACO_4': [
+                "ants",
+                "iterations",
+                "alpha",
+                "beta",
+                "evaporation",
+                "patience",
+                "patience_big_shake",
+                "big_shake_evaporation",
+                "big_shake_duration",
+                "intensity_big_shake",
+                "tau_min",
+                "tau_max",
+                "patience_small_shake",
+                "intensity_small_shake",
+                "intensity_elite_ant",
+                "ranked_ants_count",
+                "q_pheromone",
+            ]
+        }
+    
+    @staticmethod        
+    def find_best_in_category(src_path, dst_path):
+        # Sprawdza czy dana ścieżka jest poprawna
+        if not os.path.exists(src_path):
+            print(f"Warning! {src_path} doesn't exist")
+            return
+        
+        if not re.search(r'\.csv$', src_path):
+            print(f"Warning! {src_path} must be csv")
+            return
+
+        # Sprawdza wersję ACO
+        ACO_version = ''
+
+        if re.search(r'(ACO_3)|(aco_3)|(Aco_3)|(ACO3)|(aco3)|(Aco3)', src_path):
+            ACO_version = 'ACO_3'
+        elif re.search(r'(ACO_4)|(aco_4)|(Aco_4)|(ACO4)|(aco4)|(Aco4)', src_path):  
+            ACO_version = 'ACO_4'
+        else:
+            print(f'Nie ma zapisanych parametrów dla {ACO_version.group()}')
+
+        to_json = {}
+
+        with open(src_path, 'r') as f:
+            df = pd.read_csv(f)
+
+            comparable_columns = SummaryResearch.get_comparable_columns()
+            params = SummaryResearch.get_param_names()[ACO_version]
+
+            for comparable in comparable_columns:                
+                to_json[comparable] = {'params': {}}
+
+                idx = pd.Series.idxmin(df[comparable])
+
+                for col_name, val in df.iloc[idx].items():
+                    if col_name in params:
+                        to_json[comparable]['params'][col_name] = val
+                    else:
+                        to_json[comparable][col_name] = val
+                
+        VRP_saver.save_json(dst_path, to_json, verbose=True)           
             
 
 

@@ -152,3 +152,4 @@ class VRP_saver:
         target_dir = VRP_saver.set_folder(folder_name, subfolder_name=subfolder_name)
         file_path = os.path.join(target_dir, file_name)
         VRP_saver.save_json(file_path, data_to_serialize, verbose=verbose)
+

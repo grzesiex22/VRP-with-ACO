@@ -1,5 +1,7 @@
 import json
 from colorama import Fore, Style
+
+
 class Helpers:
     @staticmethod
     def convert(obj):
