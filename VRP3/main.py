@@ -1,3 +1,4 @@
+import pandas as pd
 from colorama import Fore, Style, init
 
 from VRP3.Problem.VRP import VRP
@@ -23,8 +24,8 @@ SHOW_PLOT_CONV = False
 SAVE = False
 RESEARCH = False
 SUMMARY_RESEARCH = True
-BEST_PARAMETERS_ACO_3 = False
-BEST_PARAMETERS_ACO_4 = False
+BEST_PARAMETERS_ACO_3 = True
+BEST_PARAMETERS_ACO_4 = True
 TEST = False
 
 DIR_NAME = "Results"
@@ -219,64 +220,136 @@ def main():
         print(f"{'ACO 3':^118}")
 
         # KOD DO WYBORU NAJLEPSZYCH PARAM
+        SummaryResearch.find_best_in_category(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                              src_file_name="research_dataset_ACO_3_C39_A40_R10_summary.csv",
+                                              dst_file_name_json="research_dataset_ACO_3_C39_A40_R10_best_in_category.json",
+                                              dst_file_name_csv="research_dataset_ACO_3_C39_A40_R10_best_in_category.csv")
 
         print("\n" + Fore.CYAN + Style.BRIGHT + "-" * 118)
         print(f"{'ACO 4':^118}")
 
         # KOD DO WYBORU NAJLEPSZYCH PARAM
-
-        exit(0)
+        SummaryResearch.find_best_in_category(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                              src_file_name="research_dataset_ACO_4_C39_A40_R10_summary.csv",
+                                              dst_file_name_json="research_dataset_ACO_4_C39_A40_R10_best_in_category.json",
+                                              dst_file_name_csv="research_dataset_ACO_4_C39_A40_R10_best_in_category.csv")
 
     # --- 7. ACO - PARAMETRY ---
+    print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+    print(f"{'PRZYGOTOWANIE PARAMETRÓW TESTOWYCH ALGORYTMÓW ACO':^118}")
+    print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
+
     plotter = Plotter()
 
-    aco_configs = []
-
-    if BEST_PARAMETERS_ACO_3:
-
-        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_3 Z PLIKU
-
-        exit()
-    else:
-        aco_configs.append({
+    aco_configs = {
+        "ACO_3": {
             "name": "ACO 3 (seq.)",
             "save_name": "ACO_3",
             "class": ACO_for_VRP_3,
-            "params": {"ants": ants_count, "iterations": 50, "alpha": 1, "beta": 5, "evaporation": 0.05,
-                       "patience": 200}
-            })
-
-    if BEST_PARAMETERS_ACO_4:
-
-        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_4 Z PLIKU
-
-        exit()
-    else:
-        aco_configs.append({
+            "params": {}
+        },
+        "ACO_4": {
             "name": "ACO 4 (seq. with depot)",
             "save_name": "ACO_4",
             "class": ACO_for_VRP_4,
-            "params": {"ants": ants_count, "iterations": 50, "alpha": 1, "beta": 2, "evaporation": 0.08,
-                       "patience": 500, "patience_small_shake": 11190, "patience_big_shake": 111250,
-                       "big_shake_evaporation": 0.4, "big_shake_duration": 50,
-                       "intensity_small_shake": 0.1, "intensity_big_shake": 0.6,
-                       "intensity_elite_ant": 0.5,
-                       "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
-                       "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
-            })
+            "params": {}
+        }
+    }
+
+    # 2. Logika przypisywania parametrów (przykład dla ACO_3)
+    if BEST_PARAMETERS_ACO_3:
+        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_3 Z PLIKU
+        params = SummaryResearch.get_best_aco_config(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                         src_file_name="research_dataset_ACO_3_C39_A40_R10_best_in_category.csv",
+                                         feature='best_cost_min')['params']
+        aco_configs["ACO_3"]["params"] = params
+    else:
+        aco_configs["ACO_3"]["params"] = {"ants": ants_count, "iterations": 50, "alpha": 1.0, "beta": 2.0, "evaporation": 0.05,
+                                          "patience": 200}
+
+    if BEST_PARAMETERS_ACO_4:
+        # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_4 Z PLIKU
+        params = SummaryResearch.get_best_aco_config(folder_name=DIR_NAME, subfolder_name=dataset_name,
+                                         src_file_name="research_dataset_ACO_4_C39_A40_R10_best_in_category.csv",
+                                         feature='best_cost_min')['params']
+        aco_configs["ACO_4"]["params"] = params
+    else:
+        aco_configs["ACO_4"]["params"] = {"ants": ants_count, "iterations": 50, "alpha": 1.0, "beta": 2.0, "evaporation": 0.05,
+                                          "patience": 500, "patience_small_shake": 11190, "patience_big_shake": 111250,
+                                          "big_shake_evaporation": 0.4, "big_shake_duration": 50,
+                                          "intensity_small_shake": 0.1, "intensity_big_shake": 0.6,
+                                          "intensity_elite_ant": 0.5,
+                                          "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
+                                          "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+
+    # --- WYŚWIETLANIE PARAMETRÓW W TABELI (BEZ TABULATE) ---
+    print("\n" + Fore.CYAN + Style.BRIGHT + "ZESTAWIENIE PARAMETRÓW DLA WYBRANYCH ALGORYTMÓW:" + Style.RESET_ALL)
+
+    table_rows = []
+    for key, config in aco_configs.items():
+        if config["params"]:
+            row = {"ID": key, "Nazwa": config["name"]}
+            row.update(config["params"])
+            table_rows.append(row)
+
+    if table_rows:
+        # 1. Pobieramy wszystkie nagłówki
+        headers = list(table_rows[0].keys())
+
+        # 1. Dynamiczne ustalanie szerokości: długość nagłówka + 2
+        col_widths = {h: len(str(h)) + 2 for h in headers}
+        col_widths["Nazwa"] = 25  # Nazwa algorytmu bywa dłuższa
+        col_widths["ID"] = 8  # ID jest krótkie
+
+        # Funkcja pomocnicza do tworzenia linii separatora
+        def print_line():
+            line = "+"
+            for h in headers:
+                line += "-" * (col_widths[h] + 2) + "+"
+            print(Fore.WHITE + line + Style.RESET_ALL)
+
+        # 3. Rysowanie nagłówka
+        print_line()
+        header_str = "|"
+        for h in headers:
+            header_str += f" {h:<{col_widths[h]}} |"
+        print(Fore.WHITE + header_str + Style.RESET_ALL)
+        print_line()
+
+        # 4. Rysowanie wierszy z danymi
+        for row in table_rows:
+            row_str = "|"
+            for h in headers:
+                val = row.get(h, "-")
+                # Skracamy zbyt długie wartości, by nie rozbiły tabeli
+                val_str = str(val)[:col_widths[h]]
+                row_str += f" {val_str:<{col_widths[h]}} |"
+            print(Fore.WHITE + row_str + Style.RESET_ALL)
+
+        print_line()
+    else:
+        print(Fore.RED + "Brak danych do wyświetlenia." + Style.RESET_ALL)
 
     # --- 8. ACO - POJEDYNCZY TEST ---
+    print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+    print(f"{'POJEDYŃCZE TESTY':^118}")
+    print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + Style.RESET_ALL)
 
     # --- PĘTLA TESTUJĄCA ---
-    for config in aco_configs:
+    for config in aco_configs.values():
+        # Pomijamy, jeśli parametry nie zostały załadowane (zabezpieczenie)
+        if config["params"] is None:
+            print(f"⚠️ Pomijam {config['name']} - brak parametrów.")
+            continue
+
         name = config["name"]
         save_name = config["save_name"]
         ACO_Class = config["class"]  # Dynamiczne przypisanie klasy
         params = config["params"]
 
-        print("\n" + Fore.MAGENTA + Style.BRIGHT + "#" * 118)
+        print("\n" + Fore.YELLOW + Style.BRIGHT + "*" * 118)
         print(f"{name.upper():^118}")
-        print(Fore.MAGENTA + Style.BRIGHT + "#" * 118 + "\n")
+        print(Fore.YELLOW + Style.BRIGHT + "*" * 118 + "\n")
 
         # Inicjalizacja instancji konkretnej klasy
         aco_instance = ACO_Class(
