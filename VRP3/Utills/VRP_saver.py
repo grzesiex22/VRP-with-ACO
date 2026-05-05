@@ -1,9 +1,11 @@
 import json
 import os
+import csv
 from colorama import Fore, Style
 from VRP3.Problem.VRP import VRP
 from VRP3.Utills.Generator import Generator
 from copy import deepcopy
+import re
 
 
 class VRP_saver:
@@ -152,4 +154,61 @@ class VRP_saver:
         target_dir = VRP_saver.set_folder(folder_name, subfolder_name=subfolder_name)
         file_path = os.path.join(target_dir, file_name)
         VRP_saver.save_json(file_path, data_to_serialize, verbose=verbose)
+
+    # @staticmethod
+    # def map_dataset_config_fieldnames(config: dict) -> dict:
+    #     mapping = {
+    #         "n": "node_num",
+    #         "t1": "max_time_window",
+    #         "cs": "capacity_scaler",
+    #     }
+
+    #     return {
+    #         mapping.get(k, k): v
+    #         for k, v in config.items()
+    #     }
+
+    @staticmethod
+    def prepare_saving_file(path: str, verbose=False):
+        elems = path.split('/')
+        n = len(elems)
+
+        dir = None
+        subdir = None
+        file = None
+        
+        if n > 2:
+            dir = '/'.join(elems[:-2])
+            subdir = elems[-2]
+            file = elems[-1]
+        elif n == 2:
+            dir = elems[0]
+            file = elems[1]
+        else:
+            print(f"Warning! Can't set path: {path}")
+            return
+        
+        VRP_saver.set_path(dir, file, subdir)
+
+
+    @staticmethod
+    def dataset_experiment_csv(f_csv, config_id, repeat, cost, params):
+        need_headers = False
+        
+        if not os.path.exists(path=f_csv):
+            VRP_saver.prepare_saving_file(f_csv, verbose=True)
+            need_headers = True
+
+        serialized = {'config_id': config_id, 'repeat': repeat, 'cost': cost}
+
+        for k, v in params.items(): 
+            serialized[k] = v
+
+        with open(f_csv, 'a') as f:
+            writer = csv.DictWriter(f, serialized.keys(), lineterminator='\n')
+
+            if need_headers:
+                writer.writeheader()
+         
+            writer.writerow(serialized)  
 

@@ -18,6 +18,7 @@ from VRP3.Utills.VRP_saver import VRP_saver
 from VRP3.Utills.ResearchRunner import ResearchRunner
 from VRP3.Utills.SummaryResearch import SummaryResearch
 from VRP3.Utills.Helpers import Helpers
+from VRP3.Utills.Tester import Tester
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
@@ -26,7 +27,7 @@ RESEARCH = False
 SUMMARY_RESEARCH = True
 BEST_PARAMETERS_ACO_3 = True
 BEST_PARAMETERS_ACO_4 = True
-TEST = False
+TESTER = True
 
 DIR_NAME = "Results"
 
@@ -261,7 +262,7 @@ def main():
         # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_3 Z PLIKU
         params = SummaryResearch.get_best_aco_config(folder_name=DIR_NAME, subfolder_name=dataset_name,
                                          src_file_name="research_dataset_ACO_3_C39_A40_R10_best_in_category.csv",
-                                         feature='best_cost_min')['params']
+                                         feature="best_cost_avg")['params']
         aco_configs["ACO_3"]["params"] = params
     else:
         aco_configs["ACO_3"]["params"] = {"ants": ants_count, "iterations": 50, "alpha": 1.0, "beta": 2.0, "evaporation": 0.05,
@@ -271,7 +272,7 @@ def main():
         # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_4 Z PLIKU
         params = SummaryResearch.get_best_aco_config(folder_name=DIR_NAME, subfolder_name=dataset_name,
                                          src_file_name="research_dataset_ACO_4_C39_A40_R10_best_in_category.csv",
-                                         feature='best_cost_min')['params']
+                                         feature="best_cost_avg")['params']
         aco_configs["ACO_4"]["params"] = params
     else:
         aco_configs["ACO_4"]["params"] = {"ants": ants_count, "iterations": 50, "alpha": 1.0, "beta": 2.0, "evaporation": 0.05,
@@ -281,6 +282,15 @@ def main():
                                           "intensity_elite_ant": 0.5,
                                           "ranked_ants_count": (int(ants_count * 0.15), int(ants_count * 0.5)),
                                           "q_pheromone": 1000.0, "tau_min": 0.01, "tau_max": 10.0}
+
+
+    # --- TESTY NA RÓŻNYCH ZESTAWACH DANYCH ---
+    if TESTER:
+        tester = Tester()
+        tester.run(aco_config=aco_configs['ACO_3'], path_csv="Results/Dataset_tests/ACO_3_experiments.csv", repeats= 10)
+        tester.run(aco_config=aco_configs['ACO_4'], path_csv="Results/Dataset_tests/ACO_4_experiments.csv", repeats= 10)
+        exit()           
+
 
     # --- WYŚWIETLANIE PARAMETRÓW W TABELI (BEZ TABULATE) ---
     print("\n" + Fore.CYAN + Style.BRIGHT + "ZESTAWIENIE PARAMETRÓW DLA WYBRANYCH ALGORYTMÓW:" + Style.RESET_ALL)

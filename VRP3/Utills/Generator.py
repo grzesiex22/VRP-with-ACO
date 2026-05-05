@@ -6,7 +6,7 @@ from VRP3.Problem.Vehicle import Vehicle
 
 class Generator:
 
-    def __init__(self, x0=0, x1=100, y0=0, y1=100, d0=100, d1=1000, t0=0, t1=20, s0=0, s1=0, n=20, seed=None):
+    def __init__(self, x0=0, x1=100, y0=0, y1=100, d0=10, d1=100, t0=0, t1=20, s0=0, s1=0, n=20, cs=1.3 ,seed=None):
         self.x0 = x0
         self.x1 = x1
         self.y0 = y0
@@ -17,8 +17,10 @@ class Generator:
         self.t1 = t1
         self.s0 = s0
         self.s1 = s1
+        self.cs = cs # capacity scaler
 
         self.n = n
+        self.seed = seed
 
         if seed:
             random.seed(seed)
@@ -81,7 +83,7 @@ class Generator:
         i = 0
         total_capacity = 0
 
-        while total_capacity < 1.2 * total_demand:
+        while total_capacity < self.cs * total_demand:
             capacity = random.choice([300, 500, 700])
             total_capacity += capacity
 
@@ -89,3 +91,20 @@ class Generator:
             i += 1
 
         return nodes, vehicles
+
+    def get_parameters(self):
+        return {
+            "seed": self.seed,
+            "n": self.n,
+            "t0": self.t0,
+            "t1": self.t1,
+            "cs": self.cs,
+            "x0": self.x0,
+            "x1": self.x1,
+            "y0": self.y0,
+            "y1": self.y1,
+            "d0": self.d0,
+            "d1": self.d1,
+            "s0": self.s0,
+            "s1": self.s1
+        }
