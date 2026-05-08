@@ -11,6 +11,7 @@ from Utills.VRP_saver import VRP_saver
 import pandas as pd
 import os
 import re
+import csv
 
 
 class SummaryResearch:
@@ -316,4 +317,27 @@ class SummaryResearch:
         return to_json
 
 
+    @staticmethod
+    def summary_dataset_research(src_path, dst_path):
+        df = pd.read_csv(src_path)
 
+        summary = (
+            df.groupby('config_id')
+            .agg(
+                cost_min=('cost', 'min'),
+                cost_max=('cost', 'max'),
+                cost_avg=('cost', 'mean'),
+                cost_median=('cost', 'median'),
+                cost_std=('cost', 'std'),
+
+                duration_min=('duration', 'min'),
+                duration_max=('duration', 'max'),
+                duration_avg=('duration', 'mean'),
+                duration_median=('duration', 'median'),
+                duration_std=('duration', 'std'),
+            )
+            .reset_index()
+        )
+
+        summary.to_csv(dst_path, index=False)
+        print(f'Podsumowanie testów zapisano do pliku: {dst_path}')

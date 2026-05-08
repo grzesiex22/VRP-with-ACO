@@ -24,7 +24,7 @@ VISUALIZE = False
 SHOW_PLOT_CONV = False
 SAVE = False
 RESEARCH = False
-SUMMARY_RESEARCH = False
+SUMMARY_RESEARCH = True
 BEST_PARAMETERS_ACO_3 = True
 BEST_PARAMETERS_ACO_4 = True
 TESTER = True
@@ -262,7 +262,7 @@ def main():
         # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_3 Z PLIKU
         params = SummaryResearch.get_best_aco_config(folder_name=DIR_NAME, subfolder_name=dataset_name,
                                          src_file_name="research_dataset_ACO_3_C39_A40_R10_best_in_category.csv",
-                                         feature="best_cost_min")['params']
+                                         feature="best_cost_avg")['params']
         aco_configs["ACO_3"]["params"] = params
     else:
         aco_configs["ACO_3"]["params"] = {"ants": ants_count, "iterations": 50, "alpha": 1.0, "beta": 2.0, "evaporation": 0.05,
@@ -272,7 +272,7 @@ def main():
         # ODCZYT NAJLEPSZYCH PARAMETRÓW ACO_4 Z PLIKU
         params = SummaryResearch.get_best_aco_config(folder_name=DIR_NAME, subfolder_name=dataset_name,
                                          src_file_name="research_dataset_ACO_4_C39_A40_R10_best_in_category.csv",
-                                         feature="best_cost_min")['params']
+                                         feature="best_cost_avg")['params']
         aco_configs["ACO_4"]["params"] = params
     else:
         aco_configs["ACO_4"]["params"] = {"ants": ants_count, "iterations": 50, "alpha": 1.0, "beta": 2.0, "evaporation": 0.05,
@@ -286,9 +286,22 @@ def main():
 
     # --- TESTY NA RÓŻNYCH ZESTAWACH DANYCH ---
     if TESTER:
-        tester = Tester()
-        tester.run(aco_config=aco_configs['ACO_3'], path_csv="Results/Dataset_tests/ACO_3_experiments.csv", repeats= 10)
-        tester.run(aco_config=aco_configs['ACO_4'], path_csv="Results/Dataset_tests/ACO_4_experiments.csv", repeats= 10)
+        # tester = Tester()
+        # tester.run(aco_config=aco_configs['ACO_3'], path_csv="Results/Dataset_tests/ACO_3_experiments.csv", repeats= 10)
+        # tester.run(aco_config=aco_configs['ACO_4'], path_csv="Results/Dataset_tests/ACO_4_experiments.csv", repeats= 10)
+        # tester.run(aco_config='greedy', path_csv="Results/Dataset_tests/greedy_experiments.csv", repeats=1)
+        
+        # SummaryResearch.summary_dataset_research(
+        #     "Results/Dataset_tests/ACO_3_experiments.csv", 
+        #     "Results/Dataset_tests/ACO_3_experiments_summary.csv"
+        # )
+
+        # SummaryResearch.summary_dataset_research(
+        #     "Results/Dataset_tests/ACO_4_experiments.csv", 
+        #     "Results/Dataset_tests/ACO_4_experiments_summary.csv"
+        # )
+
+
         exit()           
 
 
