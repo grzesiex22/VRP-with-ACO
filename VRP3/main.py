@@ -19,8 +19,8 @@ from VRP3.Utills.Plotter import Plotter
 from VRP3.Utills.VRP_saver import VRP_saver
 from VRP3.Utills.ResearchRunner import ResearchRunner
 from VRP3.Utills.SummaryResearch import SummaryResearch
-from VRP3.Utills.Helpers import Helpers
 from VRP3.Utills.Tester import Tester
+from VRP3.Utills.makeplots import make_bars
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
@@ -291,10 +291,31 @@ def main():
         results_dir = VRP_saver.set_folder(DIR_NAME, "Dataset_tests_Grzegorz")
         src_path_aco_3 = os.path.join(results_dir, "ACO_3_experiments.csv")
         src_path_aco_4 = os.path.join(results_dir, "ACO_4_experiments.csv")
+        src_path_greedy = os.path.join(results_dir, "Greedy_experiments.csv")
 
         # tester.run(aco_config=aco_configs['ACO_3'], path_csv=src_path_aco_3, repeats=10)
         tester.run(aco_config=aco_configs['ACO_4'], path_csv=src_path_aco_4, repeats=1)
-        exit()           
+        # tester.run(aco_config='greedy', path_csv=src_path_greedy, repeats=1)
+
+        # SummaryResearch.summary_dataset_research(
+        #     "Results/Dataset_tests/ACO_3_experiments.csv",
+        #     "Results/Dataset_tests/ACO_3_experiments_summary.csv"
+        # )
+
+        # SummaryResearch.summary_dataset_research(
+        #     "Results/Dataset_tests/ACO_4_experiments.csv",
+        #     "Results/Dataset_tests/ACO_4_experiments_summary.csv"
+        # )
+        # make_bars("Results/Dataset_tests/ACO_3_experiments_summary.csv",
+        #         "Results/Dataset_tests/bars/ACO_3")
+
+        # make_bars("Results/Dataset_tests/ACO_4_experiments_summary.csv",
+        #                "Results/Dataset_tests/bars/ACO_4")
+
+        # make_bars("Results/Dataset_tests/greedy_experiments.csv",
+        #         "Results/Dataset_tests/bars/greedy")
+
+        exit()
 
 
     # --- WYŚWIETLANIE PARAMETRÓW W TABELI (BEZ TABULATE) ---

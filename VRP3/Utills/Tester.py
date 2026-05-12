@@ -14,6 +14,7 @@ from tqdm import tqdm
 from VRP3.Problem.Vehicle import Vehicle
 from VRP3.Utills.VRP_saver import VRP_saver
 from VRP3.Problem.VRP import VRP
+from VRP3.Gready import greedy_vrp
 
 
 class Tester:
@@ -21,6 +22,53 @@ class Tester:
         self.dataset_configs = self.generate_dataset()
         self.path_csv = None
         self.save_name = None
+
+    # def generate_dataset(self):
+    #     # seeds = [50, 51, 52, 53]
+    #     # nodes = [20, 40, 60, 80]
+    #     # capacity_scalers = [1.3, 1.6, 2.0]
+    #     # time_windows = [5, 10, 15, 20]
+
+    #     seeds = [50, 51]
+    #     nodes = [20, 40, 60, 80]
+    #     capacity_scalers = [1.3, 1.6]
+    #     time_windows = [10, 20]
+
+
+    #     # # seeds = [50, 51]
+    #     # # nodes = [10, 20]
+    #     # # capacity_scalers = [1.3, 1.5]
+    #     # # time_windows = [5, 10]
+
+    #     dataset_configs = []
+
+    #     id = 0
+    #     for s in seeds:
+    #         for n in nodes:
+    #             for t in time_windows:
+    #                 for cs in capacity_scalers:
+    #                     dataset_configs.append({
+    #                         "id": id,
+    #                         "ants": n,
+    #                         "n": n,
+    #                         "t1": t,
+    #                         "cs": cs,
+    #                         "seed": s
+    #                     })
+    #                     id += 1
+
+    #     # dataset_configs = [
+    #     #     {"id": 0,"ants": 20,"n": 20,"t1": 10,"cs": 1.3,"seed": 50},
+    #     #     {"id": 1,"ants": 20,"n": 20,"t1": 15,"cs": 1.6,"seed": 51},
+    #     #     {"id": 2,"ants": 40,"n": 40,"t1": 10,"cs": 1.3,"seed": 52},
+    #     #     {"id": 3,"ants": 40,"n": 40,"t1": 20,"cs": 1.6,"seed": 53},
+    #     #     {"id": 4,"ants": 60,"n": 60,"t1": 10,"cs": 1.3,"seed": 50},
+    #     #     {"id": 5,"ants": 60,"n": 60,"t1": 20,"cs": 1.6,"seed": 51},
+    #     #     {"id": 6,"ants": 80,"n": 80,"t1": 10,"cs": 1.3,"seed": 52},
+    #     #     {"id": 7,"ants": 80,"n": 80,"t1": 20,"cs": 1.6,"seed": 5}
+    #     # ]
+
+    #     return dataset_configs
 
     def generate_dataset(self):
         seeds = [50, 51, 52, 53]
@@ -31,11 +79,11 @@ class Tester:
         # 1. Tworzymy 8 unikalnych kombinacji (seed, t1, cs)
         # Gwarantujemy użycie wszystkich wartości przynajmniej raz
         base_combinations = [
-            {"seed": 50, "t1": 5, "cs": 1.3},
+            {"seed": 50, "t1": 5,  "cs": 1.3},
             {"seed": 51, "t1": 10, "cs": 1.6},
             {"seed": 52, "t1": 15, "cs": 2.0},
             {"seed": 53, "t1": 20, "cs": 1.3},
-            {"seed": 50, "t1": 5, "cs": 1.6},
+            {"seed": 50, "t1": 5,  "cs": 1.6},
             {"seed": 51, "t1": 10, "cs": 2.0},
             {"seed": 52, "t1": 15, "cs": 1.3},
             {"seed": 53, "t1": 20, "cs": 1.6}
@@ -139,26 +187,35 @@ class Tester:
                         nodes, vehicles = generator.generate()
                         problem = VRP(nodes, vehicles=vehicles)
 
-                        # Przygotowanie instancji ACO
-                        if aco_config["params"] is None:
-                            print(f"⚠️ W {aco_config['name']} - brak parametrów.")
-                            return
+                        if aco_config == 'greedy':
+                            start = time.perf_counter()
 
-                        ACO_Class = aco_config["class"]
-                        params = aco_config["params"].copy()
-                        params["ants"] = ants
+                            problem, cost = greedy_vrp(nodes, problem.copy())
 
-                        aco_instance = ACO_Class(problem.copy(), **params)
-                        aco_instance.verbose = False
+                            end = time.perf_counter()
 
-                        # Uruchomienie testu i pomiar czasu
-                        start = time.perf_counter()
+                            duration = end - start
+                        else:
+                            # Przygotowanie instancji ACO
+                            if aco_config["params"] is None:
+                                print(f"⚠️ W {aco_config['name']} - brak parametrów.")
+                                return
 
-                        vehicles, cost, history = aco_instance.run()
+                            ACO_Class = aco_config["class"]
+                            params = aco_config["params"].copy()
+                            params["ants"] = ants
 
-                        end = time.perf_counter()
+                            aco_instance = ACO_Class(problem.copy(), **params)
+                            aco_instance.verbose = False
 
-                        duration = end - start
+                            # Uruchomienie testu i pomiar czasu
+                            start = time.perf_counter()
+
+                            vehicles, cost, history = aco_instance.run()
+
+                            end = time.perf_counter()
+
+                            duration = end - start
 
                         # Zapis danych do csv
                         serialized = {
@@ -182,8 +239,3 @@ class Tester:
                         pbar.update(1)
         
         print(f'Koniec testów dla {aco_config["name"]}')
-
-
-
-                
-
