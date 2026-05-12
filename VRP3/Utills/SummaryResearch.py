@@ -1,16 +1,10 @@
 import ast
 import os
-import csv
-import sys
 import re
 import json
-
-import numpy as np
-from Utills.Helpers import Helpers
-from Utills.VRP_saver import VRP_saver
 import pandas as pd
-import os
-import re
+
+from Utills.VRP_saver import VRP_saver
 
 
 class SummaryResearch:

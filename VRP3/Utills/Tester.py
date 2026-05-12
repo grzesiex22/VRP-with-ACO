@@ -26,29 +26,37 @@ class Tester:
         seeds = [50, 51, 52, 53]
         nodes = [20, 40, 60, 80]
         capacity_scalers = [1.3, 1.6, 2.0]
-        time_windows = [5, 10, 15, 20] 
+        time_windows = [5, 10, 15, 20]
 
-        # seeds = [50, 51]
-        # nodes = [10, 20]
-        # capacity_scalers = [1.3, 1.5]
-        # time_windows = [5, 10] 
+        # 1. Tworzymy 8 unikalnych kombinacji (seed, t1, cs)
+        # Gwarantujemy użycie wszystkich wartości przynajmniej raz
+        base_combinations = [
+            {"seed": 50, "t1": 5, "cs": 1.3},
+            {"seed": 51, "t1": 10, "cs": 1.6},
+            {"seed": 52, "t1": 15, "cs": 2.0},
+            {"seed": 53, "t1": 20, "cs": 1.3},
+            {"seed": 50, "t1": 5, "cs": 1.6},
+            {"seed": 51, "t1": 10, "cs": 2.0},
+            {"seed": 52, "t1": 15, "cs": 1.3},
+            {"seed": 53, "t1": 20, "cs": 1.6}
+        ]
 
         dataset_configs = []
+        current_id = 0
 
-        id = 0
-        for s in seeds:
-            for n in nodes:
-                for t in time_windows:
-                    for cs in capacity_scalers:
-                        dataset_configs.append({
-                            "id": id,
-                            "ants": n,
-                            "n": n,
-                            "t1": t,
-                            "cs": cs,
-                            "seed": s
-                        })
-                        id += 1
+        # 2. Iterujemy po wszystkich węzłach (nodes)
+        for n in nodes:
+            # 3. Dla każdego węzła aplikujemy nasze 8 kombinacji
+            for combo in base_combinations:
+                dataset_configs.append({
+                    "id": current_id,
+                    "ants": n,  # Liczba mrówek równa liczbie węzłów (jak w Twoim przykładzie)
+                    "n": n,
+                    "t1": combo["t1"],
+                    "cs": combo["cs"],
+                    "seed": combo["seed"]
+                })
+                current_id += 1
 
         return dataset_configs
     
@@ -72,13 +80,13 @@ class Tester:
     def run(self, path_csv, aco_config, repeats=10):
         print('%'*100)
         print(f'--- TESTY NA ZESTAWACH DANYCH ROZPOCZĘTO ---')
-        print(f'--- Wersja ACO: {aco_config['name']}')
+        print(f'--- Wersja ACO: {aco_config["name"]}')
         print(f'--- Zapisywanie do: {path_csv}')
         print('%'*100)
 
         # Dane zapisu do pliku
         self.path_csv = path_csv
-        self.save_name = path_csv.rsplit('/', maxsplit=1)[1]
+        self.save_name = aco_config["name"]
 
         # Wczytanie postępu (ustalenie liczby iteracji)        
         total_tests = len(self.dataset_configs) * repeats
@@ -152,7 +160,6 @@ class Tester:
 
                         duration = end - start
 
-
                         # Zapis danych do csv
                         serialized = {
                             'config_id': config['id'],
@@ -174,7 +181,7 @@ class Tester:
 
                         pbar.update(1)
         
-        print(f'Koniec testów dla {aco_config['name']}')
+        print(f'Koniec testów dla {aco_config["name"]}')
 
 
 
