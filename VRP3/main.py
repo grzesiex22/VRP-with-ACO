@@ -19,7 +19,7 @@ from VRP3.Utills.ResearchRunner import ResearchRunner
 from VRP3.Utills.SummaryResearch import SummaryResearch
 from VRP3.Utills.Helpers import Helpers
 from VRP3.Utills.Tester import Tester
-from VRP3.Utills.makeplots import make_bars
+from VRP3.Utills.makeplots import summary_bars
 
 VISUALIZE = False
 SHOW_PLOT_CONV = False
@@ -301,14 +301,8 @@ def main():
         #     "Results/Dataset_tests/ACO_4_experiments.csv", 
         #     "Results/Dataset_tests/ACO_4_experiments_summary.csv"
         # )
-        # make_bars("Results/Dataset_tests/ACO_3_experiments_summary.csv",
-        #         "Results/Dataset_tests/bars/ACO_3")
 
-        # make_bars("Results/Dataset_tests/ACO_4_experiments_summary.csv",
-        #                "Results/Dataset_tests/bars/ACO_4")
-
-        # make_bars("Results/Dataset_tests/greedy_experiments.csv",
-        #         "Results/Dataset_tests/bars/greedy")
+        summary_bars('Results/Dataset_tests/summary_bars')
 
         exit()           
 
